@@ -193,6 +193,7 @@ extern int	joybspeed;
 
 extern int	viewwidth;
 extern int	usemouselook;
+#include "m_gameplay.h"
 extern int	viewheight;
 
 extern int	mouseSensitivity;
@@ -280,6 +281,18 @@ default_t	defaults[] =
 #endif
 
     {"mouse_look",&usemouselook, 1},
+    {"gp_movespeed",&gp.movespeed, 100},
+    {"gp_gravity",&gp.gravity, 100},
+    {"gp_friction",&gp.friction, 100},
+    {"gp_monster_health",&gp.monhealth, 100},
+    {"gp_monster_speed",&gp.monspeed, 100},
+    {"gp_monster_damage",&gp.mondamage, 100},
+    {"gp_player_damage",&gp.plrdamage, 100},
+    {"gp_infinite_ammo",&gp.infammo, 0},
+    {"gp_god_mode",&gp.god, 0},
+    {"gp_respawn",&gp.respawn, 0},
+    {"gp_jump",&gp.jump, 0},
+    {"gp_always_run",&gp.alwaysrun, 0},
     {"use_mouse",&usemouse, 1},
     {"mouseb_fire",&mousebfire,0},
     {"mouseb_strafe",&mousebstrafe,1},

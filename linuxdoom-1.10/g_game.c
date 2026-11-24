@@ -257,6 +257,8 @@ void G_BuildTiccmd (ticcmd_t* cmd)
     strafe = gamekeydown[key_strafe] || mousebuttons[mousebstrafe] 
 	|| joybuttons[joybstrafe]; 
     speed = gamekeydown[key_speed] || joybuttons[joybspeed];
+    if (gp.alwaysrun)
+	speed = !speed;
  
     forward = side = 0;
     
@@ -341,7 +343,7 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	cmd->buttons |= BT_ATTACK; 
  
 #ifdef __EMSCRIPTEN__
-    if (gamekeydown[key_use] || gamekeydown[' '] || joybuttons[joybuse] )
+    if (gamekeydown[key_use] || (gamekeydown[' '] && !geff.jump) || joybuttons[joybuse] )
 #else
     if (gamekeydown[key_use] || joybuttons[joybuse] )
 #endif 
@@ -350,6 +352,9 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	// clear double clicks if hit use button 
 	dclicks = 0;                   
     } 
+
+    if (gamekeydown[' '] && geff.jump)
+	cmd->buttons |= BT_JUMP;
 
     // chainsaw overrides 
     for (i=0 ; i<NUMWEAPONS-1 ; i++)        

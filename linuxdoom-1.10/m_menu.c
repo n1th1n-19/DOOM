@@ -35,6 +35,7 @@ rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
 
 #include "doomdef.h"
 #include "dstrings.h"
+#include "m_gameplay.h"
 
 #include "d_main.h"
 
@@ -196,6 +197,11 @@ void M_ChangeSensitivity(int choice);
 void M_SfxVol(int choice);
 void M_MusicVol(int choice);
 void M_ChangeDetail(int choice);
+extern int usemouselook;
+void M_Gameplay(int choice);
+void M_DrawGameplay(void);
+extern menu_t GameplayDef;
+void M_GameplayChange(int choice);
 void M_SizeDisplay(int choice);
 void M_StartGame(int choice);
 void M_Sound(int choice);
@@ -353,7 +359,7 @@ menuitem_t OptionsMenu[]=
 {
     {1,"M_ENDGAM",	M_EndGame,'e'},
     {1,"M_MESSG",	M_ChangeMessages,'m'},
-    {1,"M_DETAIL",	M_ChangeDetail,'g'},
+    {1,"",		M_Gameplay,'g'},	// was the (obsolete) detail toggle
     {2,"M_SCRNSZ",	M_SizeDisplay,'s'},
     {-1,"",0},
     {2,"M_MSENS",	M_ChangeSensitivity,'m'},
@@ -952,8 +958,7 @@ void M_DrawOptions(void)
 {
     V_DrawPatchDirect (108,15,0,W_CacheLumpName("M_OPTTTL",PU_CACHE));
 	
-    V_DrawPatchDirect (OptionsDef.x + 175,OptionsDef.y+LINEHEIGHT*detail,0,
-		       W_CacheLumpName(detailNames[detailLevel],PU_CACHE));
+    M_WriteText (OptionsDef.x, OptionsDef.y+LINEHEIGHT*detail+4, "GAMEPLAY");
 
     V_DrawPatchDirect (OptionsDef.x + 120,OptionsDef.y+LINEHEIGHT*messages,0,
 		       W_CacheLumpName(msgNames[showMessages],PU_CACHE));
@@ -968,6 +973,127 @@ void M_DrawOptions(void)
 void M_Options(int choice)
 {
     M_SetupNextMenu(&OptionsDef);
+}
+
+
+//
+// GAMEPLAY MENU
+// Text-only rows (no WAD patches): label on the left, value on the right.
+// Left/right (or Enter) change the value. Rows marked lockable are ignored
+// while demos or netgames run (see GP_Locked in m_gameplay.c).
+//
+typedef struct
+{
+    char*	label;
+    int*	var;		// NULL = "reset to vanilla" row
+    int		min, max, step;	// bool rows: 0..1
+    boolean	lockable;
+} gpitem_t;
+
+static gpitem_t gpitems[] =
+{
+    {"MOVE SPEED",	&gp.movespeed,	25, 400, 25, true},
+    {"GRAVITY",		&gp.gravity,	25, 400, 25, true},
+    {"FRICTION",	&gp.friction,	25, 400, 25, true},
+    {"MONSTER HEALTH",	&gp.monhealth,	25, 800, 25, true},
+    {"MONSTER SPEED",	&gp.monspeed,	25, 300, 25, true},
+    {"MONSTER DAMAGE",	&gp.mondamage,	0, 500, 25, true},
+    {"YOUR DAMAGE",	&gp.plrdamage,	25, 1000, 25, true},
+    {"INFINITE AMMO",	&gp.infammo,	0, 1, 1, true},
+    {"GOD MODE",	&gp.god,	0, 1, 1, true},
+    {"MONSTERS RESPAWN",&gp.respawn,	0, 1, 1, true},
+    {"JUMP (SPACE)",	&gp.jump,	0, 1, 1, true},
+    {"ALWAYS RUN",	&gp.alwaysrun,	0, 1, 1, false},
+    {"MOUSE LOOK",	&usemouselook,	0, 1, 1, false},
+    {"RESET TO VANILLA",NULL,		0, 0, 0, false}
+};
+
+#define GP_ROWS		(sizeof(gpitems)/sizeof(gpitems[0]))
+#define GP_LINEHEIGHT	10
+
+menuitem_t GameplayMenu[GP_ROWS] =
+{
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}
+};
+
+menu_t GameplayDef =
+{
+    GP_ROWS,
+    &OptionsDef,
+    GameplayMenu,
+    M_DrawGameplay,
+    40,24,
+    0
+};
+
+void M_Gameplay(int choice)
+{
+    M_SetupNextMenu(&GameplayDef);
+}
+
+void M_GameplayChange(int choice)
+{
+    gpitem_t*	it = &gpitems[itemOn];
+
+    if (!it->var)
+    {
+	GP_Reset ();
+	GP_Update ();
+	return;
+    }
+    if (it->lockable && GP_Locked ())
+	return;
+
+    if (it->max == 1)
+	*it->var = !*it->var;
+    else if (choice)
+    {
+	*it->var += it->step;
+	if (*it->var > it->max)
+	    *it->var = it->max;
+    }
+    else
+    {
+	*it->var -= it->step;
+	if (*it->var < it->min)
+	    *it->var = it->min;
+    }
+    GP_Update ();
+}
+
+void M_DrawGameplay(void)
+{
+    int		i;
+    char	value[16];
+    int		y = GameplayDef.y;
+
+    M_WriteText (160 - M_StringWidth("GAMEPLAY")/2, 8, "GAMEPLAY");
+
+    for (i=0 ; i<GP_ROWS ; i++, y += GP_LINEHEIGHT)
+    {
+	gpitem_t* it = &gpitems[i];
+
+	M_WriteText (GameplayDef.x, y, it->label);
+	if (!it->var)
+	    continue;
+	if (it->lockable && GP_Locked ())
+	    strcpy (value, "LOCKED");
+	else if (it->max == 1)
+	    strcpy (value, *it->var ? "ON" : "OFF");
+	else
+	    sprintf (value, "%d%%", *it->var);
+	M_WriteText (270 - M_StringWidth(value), y, value);
+    }
+
+    if (GP_Locked ())
+	M_WriteText (160 - M_StringWidth("LOCKED IN DEMOS AND NETGAMES")/2, 176,
+		     "LOCKED IN DEMOS AND NETGAMES");
+    M_WriteText (160 - M_StringWidth("LEFT/RIGHT CHANGE  ESC BACK")/2, 188,
+		 "LEFT/RIGHT CHANGE  ESC BACK");
 }
 
 
@@ -1745,6 +1871,7 @@ void M_Drawer (void)
     short		max;
     char		string[40];
     int			start;
+    int			lineheight = (currentMenu == &GameplayDef) ? 10 : LINEHEIGHT;
 
     inhelpscreens = false;
 
@@ -1794,12 +1921,12 @@ void M_Drawer (void)
 	if (currentMenu->menuitems[i].name[0])
 	    V_DrawPatchDirect (x,y,0,
 			       W_CacheLumpName(currentMenu->menuitems[i].name ,PU_CACHE));
-	y += LINEHEIGHT;
+	y += lineheight;
     }
 
     
     // DRAW SKULL
-    V_DrawPatchDirect(x + SKULLXOFF,currentMenu->y - 5 + itemOn*LINEHEIGHT, 0,
+    V_DrawPatchDirect(x + SKULLXOFF,currentMenu->y - 5 + itemOn*lineheight, 0,
 		      W_CacheLumpName(skullName[whichSkull],PU_CACHE));
 
 }

@@ -287,8 +287,8 @@ boolean P_Move (mobj_t*	actor)
     if ((unsigned)actor->movedir >= 8)
 	I_Error ("Weird actor->movedir!");
 		
-    tryx = actor->x + actor->info->speed*xspeed[actor->movedir];
-    tryy = actor->y + actor->info->speed*yspeed[actor->movedir];
+    tryx = actor->x + (actor->info->speed*geff.monspeed/100)*xspeed[actor->movedir];
+    tryy = actor->y + (actor->info->speed*geff.monspeed/100)*yspeed[actor->movedir];
 
     try_ok = P_TryMove (actor, tryx, tryy);
 

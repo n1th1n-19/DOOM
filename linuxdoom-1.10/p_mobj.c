@@ -109,7 +109,7 @@ void P_ExplodeMissile (mobj_t* mo)
 // P_XYMovement  
 //
 #define STOPSPEED		0x1000
-#define FRICTION		0xe800
+#define FRICTION		(geff.friction)
 
 void P_XYMovement (mobj_t* mo) 
 { 	
@@ -499,6 +499,12 @@ P_SpawnMobj
     mobj->height = info->height;
     mobj->flags = info->flags;
     mobj->health = info->spawnhealth;
+    if (mobj->flags & MF_COUNTKILL)
+    {
+	mobj->health = mobj->health * geff.monhealth / 100;
+	if (mobj->health < 1)
+	    mobj->health = 1;
+    }
 
     if (gameskill != sk_nightmare)
 	mobj->reactiontime = info->reactiontime;

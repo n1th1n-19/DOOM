@@ -798,6 +798,12 @@ P_DamageMobj
     player = target->player;
     if (player && gameskill == sk_baby)
 	damage >>= 1; 	// take half damage in trainer mode
+
+    // gameplay menu: monsters hurt the player / the player hurts monsters
+    if (player && source && !source->player)
+	damage = damage * geff.mondamage / 100;
+    else if (!player && source && source->player)
+	damage = damage * geff.plrdamage / 100;
 		
 
     // Some close combat weapons should not
@@ -846,6 +852,7 @@ P_DamageMobj
 	// ignore damage in GOD mode, or with INVUL power.
 	if ( damage < 1000
 	     && ( (player->cheats&CF_GODMODE)
+		  || geff.god
 		  || player->powers[pw_invulnerability] ) )
 	{
 	    return;

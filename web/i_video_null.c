@@ -10,6 +10,7 @@
 #include "d_main.h"
 #include "doomdef.h"
 #include "r_main.h"
+#include "d_event.h"
 #include "compose.h"
 
 static byte pal[768];
@@ -23,6 +24,30 @@ void I_StartTic (void)
     static int n;
     if (++n == 30 && getenv ("DOOM_LOOK"))
 	R_AddLook (atoi (getenv ("DOOM_LOOK")));
+
+    // test hook: DOOM_KEYS=27,173,13 presses these keys, one every 4 tics
+    //  (from tic 40), e.g. to open menus
+    {
+	char* k = getenv ("DOOM_KEYS");
+	if (k && n >= 40 && (n % 4) == 0)
+	{
+	    int idx = (n-40)/4, key = 0, i;
+	    for (i = 0; k && i <= idx; i++)
+	    {
+		key = atoi (k);
+		k = strchr (k, ',');
+		if (k) k++;
+		if (i < idx && !k)
+		    return;
+	    }
+	    if (i == idx+1 && key)
+	    {
+		event_t e;
+		e.type = ev_keydown; e.data1 = key; D_PostEvent (&e);
+		e.type = ev_keyup;   D_PostEvent (&e);
+	    }
+	}
+    }
 }
 void I_UpdateNoBlit (void) { }
 void I_InitGraphics (void) { }

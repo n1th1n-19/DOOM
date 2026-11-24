@@ -50,7 +50,8 @@
 // but we do not have any moving sectors nearby
 #define MAXRADIUS		32*FRACUNIT
 
-#define GRAVITY		FRACUNIT
+#include "m_gameplay.h"
+#define GRAVITY		(geff.gravity)
 #define MAXMOVE		(30*FRACUNIT)
 
 #define USERANGE		(64*FRACUNIT)

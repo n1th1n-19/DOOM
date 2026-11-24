@@ -158,10 +158,14 @@ void P_MovePlayer (player_t* player)
     onground = (player->mo->z <= player->mo->floorz);
 	
     if (cmd->forwardmove && onground)
-	P_Thrust (player, player->mo->angle, cmd->forwardmove*2048);
+	P_Thrust (player, player->mo->angle, cmd->forwardmove*2048*geff.movespeed/100);
     
     if (cmd->sidemove && onground)
-	P_Thrust (player, player->mo->angle-ANG90, cmd->sidemove*2048);
+	P_Thrust (player, player->mo->angle-ANG90, cmd->sidemove*2048*geff.movespeed/100);
+
+    // jump (gameplay menu). BT_JUMP is only ever set while geff.jump is on.
+    if ((cmd->buttons & BT_JUMP) && geff.jump && onground)
+	player->mo->momz = 8*FRACUNIT;
 
     if ( (cmd->forwardmove || cmd->sidemove) 
 	 && player->mo->state == &states[S_PLAY] )
@@ -235,6 +239,13 @@ void P_DeathThink (player_t* player)
 //
 void P_PlayerThink (player_t* player)
 {
+    if (geff.infammo)
+    {
+	int a;
+	for (a=0 ; a<NUMAMMO ; a++)
+	    player->ammo[a] = player->maxammo[a];
+    }
+
     ticcmd_t*		cmd;
     weapontype_t	newweapon;
 	
