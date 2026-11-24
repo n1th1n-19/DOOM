@@ -31,6 +31,11 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include <stdarg.h>
 #include <sys/time.h>
 #include <unistd.h>
+#ifdef __EMSCRIPTEN__
+// emscripten.h clobbers true/false, so JS calls live in web/web_glue.c
+void Web_Quit (void);
+void Web_Error (const char* msg);
+#endif
 
 #include "doomdef.h"
 #include "m_misc.h"
@@ -120,11 +125,19 @@ void I_Quit (void)
     I_ShutdownMusic();
     M_SaveDefaults ();
     I_ShutdownGraphics();
+#ifdef __EMSCRIPTEN__
+    Web_Quit ();
+#endif
     exit(0);
 }
 
 void I_WaitVBL(int count)
 {
+#ifdef __EMSCRIPTEN__
+    // shortcut: usleep would freeze the tab; nothing waits on this in the browser.
+    (void)count;
+    return;
+#endif
 #ifdef SGI
     sginap(1);                                           
 #else
@@ -179,5 +192,14 @@ void I_Error (char *error, ...)
     D_QuitNetGame ();
     I_ShutdownGraphics();
     
+#ifdef __EMSCRIPTEN__
+    {
+	char msg[512];
+	va_start (argptr,error);
+	vsnprintf (msg, sizeof(msg), error, argptr);
+	va_end (argptr);
+	Web_Error (msg);
+    }
+#endif
     exit(-1);
 }

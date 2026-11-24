@@ -1,0 +1,25 @@
+# Browser build. Usage: source ~/emsdk/emsdk_env.sh && make -f Makefile.web
+SRC := ../linuxdoom-1.10
+SKIP := $(SRC)/i_video.c $(SRC)/i_sound.c $(SRC)/i_net.c
+CSRC := $(filter-out $(SKIP),$(wildcard $(SRC)/*.c)) i_video_sdl.c i_sound_stub.c i_net_stub.c web_glue.c
+BUILD := build
+
+# -std=gnu89: the 1997 code is K&R-era C; no -DLINUX (it pulls in <values.h>/X11 defaults)
+CFLAGS := -O2 -std=gnu89 -DNORMALUNIX -I$(SRC) -sUSE_SDL=2 -w \
+	-Wno-error=int-conversion -Wno-error=incompatible-pointer-types
+LDFLAGS := -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=1048576 -sEXIT_RUNTIME=0 \
+	$(if $(wildcard doom1.wad),--preload-file doom1.wad)
+
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(CSRC)))
+vpath %.c $(SRC) .
+
+all: $(BUILD)/doom.js
+$(BUILD)/doom.js: $(OBJS)
+	emcc $(OBJS) -o $@ $(LDFLAGS)
+$(BUILD)/%.o: %.c | $(BUILD)
+	emcc $(CFLAGS) -c $< -o $@
+$(BUILD):
+	mkdir -p $(BUILD)
+clean:
+	rm -rf $(BUILD)
+.PHONY: all clean

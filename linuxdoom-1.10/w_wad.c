@@ -66,6 +66,10 @@ void**			lumpcache;
 
 #define strcmpi	strcasecmp
 
+#ifdef __EMSCRIPTEN__
+// libc compat header already declares strupr with another signature
+#define strupr doom_strupr
+#endif
 void strupr (char* s)
 {
     while (*s) { *s = toupper(*s); s++; }

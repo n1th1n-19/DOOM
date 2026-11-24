@@ -227,6 +227,10 @@ void D_Display (void)
     }
     else
 	wipe = false;
+#ifdef __EMSCRIPTEN__
+    // shortcut: wipe busy-waits, blocks the browser loop. Re-add as a per-frame state machine later.
+    wipe = false;
+#endif
 
     if (gamestate == GS_LEVEL && gametic)
 	HU_Erase();
@@ -351,6 +355,50 @@ void D_Display (void)
 //
 extern  boolean         demorecording;
 
+#ifdef __EMSCRIPTEN__
+void Web_SetMainLoop (void (*fn)(void));
+#endif
+
+// One iteration of the main loop. Split out so the browser can drive it.
+static void D_DoomFrame (void)
+{
+    // frame syncronous IO operations
+    I_StartFrame ();                
+    
+    // process one or more tics
+    if (singletics)
+    {
+	I_StartTic ();
+	D_ProcessEvents ();
+	G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
+	if (advancedemo)
+	    D_DoAdvanceDemo ();
+	M_Ticker ();
+	G_Ticker ();
+	gametic++;
+	maketic++;
+    }
+    else
+    {
+	TryRunTics (); // will run at least one tic
+    }
+	    
+    S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
+
+    // Update display, next frame, with current state.
+    D_Display ();
+
+#ifndef SNDSERV
+    // Sound mixing for the buffer is snychronous.
+    I_UpdateSound();
+#endif	
+    // Synchronous sound output is explicitly called.
+#ifndef SNDINTR
+    // Update sound output.
+    I_SubmitSound();
+#endif
+}
+
 void D_DoomLoop (void)
 {
     if (demorecording)
@@ -366,44 +414,12 @@ void D_DoomLoop (void)
 	
     I_InitGraphics ();
 
+#ifdef __EMSCRIPTEN__
+    Web_SetMainLoop (D_DoomFrame);
+#else
     while (1)
-    {
-	// frame syncronous IO operations
-	I_StartFrame ();                
-	
-	// process one or more tics
-	if (singletics)
-	{
-	    I_StartTic ();
-	    D_ProcessEvents ();
-	    G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
-	    if (advancedemo)
-		D_DoAdvanceDemo ();
-	    M_Ticker ();
-	    G_Ticker ();
-	    gametic++;
-	    maketic++;
-	}
-	else
-	{
-	    TryRunTics (); // will run at least one tic
-	}
-		
-	S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
-
-	// Update display, next frame, with current state.
-	D_Display ();
-
-#ifndef SNDSERV
-	// Sound mixing for the buffer is snychronous.
-	I_UpdateSound();
-#endif	
-	// Synchronous sound output is explicitly called.
-#ifndef SNDINTR
-	// Update sound output.
-	I_SubmitSound();
+	D_DoomFrame ();
 #endif
-    }
 }
 
 
@@ -1057,7 +1073,9 @@ void D_DoomMain (void)
 	    "                      press enter to continue\n"
 	    "===========================================================================\n"
 	    );
+#ifndef __EMSCRIPTEN__
 	getchar ();
+#endif
     }
 	
 
