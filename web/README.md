@@ -44,13 +44,34 @@ are shared across the renderer.
 
 ## Deploying to Vercel
 
-The site is static, so there is nothing to build on Vercel itself. Build locally,
-then upload the `dist/` folder:
+The site is static, so there is nothing to build on Vercel itself. `web/dist/` is
+the finished site and **is committed**, so a Git-connected Vercel project can serve
+it directly.
+
+Git-connected project, in the Vercel project settings:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `web/dist` |
+| Framework Preset | Other |
+| Build Command | empty |
+| Output Directory | empty (the default) |
+
+Without that Root Directory, Vercel serves the repo root, `build/doom.js` is
+missing, and the page fails with a 404 plus a "MIME type text/plain" error.
+
+CLI deploy instead:
 
 ```bash
-make -f Makefile.web dist          # dist/ = index.html, vercel.json, build/doom.{js,wasm,data}
-cd dist
-npx vercel deploy --prod           # first run asks you to log in and link a project
+cd web/dist
+npx vercel deploy --prod
+```
+
+After changing any source, rebuild and commit the result:
+
+```bash
+make -f Makefile.web dist    # refreshes dist/ (index.html, vercel.json, build/doom.{js,wasm,data})
+git add web/dist && git commit
 ```
 
 - `doom.data` contains the WAD, so the shareware `doom1.wad` is what gets
