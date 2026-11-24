@@ -293,6 +293,7 @@ default_t	defaults[] =
     {"gp_respawn",&gp.respawn, 0},
     {"gp_jump",&gp.jump, 0},
     {"gp_always_run",&gp.alwaysrun, 0},
+    {"gp_crosshair",&gp.crosshair, 1},
     {"use_mouse",&usemouse, 1},
     {"mouseb_fire",&mousebfire,0},
     {"mouseb_strafe",&mousebstrafe,1},

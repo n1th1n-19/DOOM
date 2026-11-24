@@ -1005,6 +1005,7 @@ static gpitem_t gpitems[] =
     {"JUMP (SPACE)",	&gp.jump,	0, 1, 1, true},
     {"ALWAYS RUN",	&gp.alwaysrun,	0, 1, 1, false},
     {"MOUSE LOOK",	&usemouselook,	0, 1, 1, false},
+    {"CROSSHAIR",	&gp.crosshair,	0, 1, 1, false},
     {"RESET TO VANILLA",NULL,		0, 0, 0, false}
 };
 
@@ -1017,7 +1018,8 @@ menuitem_t GameplayMenu[GP_ROWS] =
     {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
     {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
     {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
-    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0}
+    {2,"",M_GameplayChange,0}, {2,"",M_GameplayChange,0},
+    {2,"",M_GameplayChange,0}
 };
 
 menu_t GameplayDef =

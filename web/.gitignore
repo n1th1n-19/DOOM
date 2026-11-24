@@ -1,3 +1,4 @@
 build/
-*.wad
+/*.wad
 !dist/build/
+dist/wads/

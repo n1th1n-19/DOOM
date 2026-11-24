@@ -8,8 +8,7 @@ BUILD := build
 CFLAGS := -O2 -std=gnu89 -DNORMALUNIX -I$(SRC) -sUSE_SDL=2 -w \
 	-Wno-error=int-conversion -Wno-error=incompatible-pointer-types
 LDFLAGS := -sUSE_SDL=2 -lidbfs.js -sEXPORTED_FUNCTIONS=_main,_Web_SaveConfig \
-	-sEXPORTED_RUNTIME_METHODS=FS,ENV,ccall -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=1048576 -sEXIT_RUNTIME=0 \
-	$(if $(wildcard doom1.wad),--preload-file doom1.wad)
+	-sEXPORTED_RUNTIME_METHODS=FS,ENV,ccall -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=1048576 -sEXIT_RUNTIME=0
 
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(CSRC)))
 vpath %.c $(SRC) .
@@ -37,10 +36,10 @@ $(BUILD)/doomtest.js: $(TESTOBJS)
 # Static site for hosting (Vercel etc.): make -f Makefile.web dist
 # then: cd dist && vercel deploy --prod
 dist: all
-	@test -f $(BUILD)/doom.data || { echo "dist: build/doom.data missing - put doom1.wad here and rebuild"; exit 1; }
 	rm -rf dist
 	mkdir -p dist/build
 	cp index.html dist/
 	cp vercel.dist.json dist/vercel.json
-	cp $(BUILD)/doom.js $(BUILD)/doom.wasm $(BUILD)/doom.data dist/build/
+	cp $(BUILD)/doom.js $(BUILD)/doom.wasm dist/build/
+	cp -r wads dist/
 .PHONY: all clean test dist

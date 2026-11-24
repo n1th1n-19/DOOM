@@ -4,8 +4,16 @@ A WebAssembly build of the 1997 DOOM source in [`../linuxdoom-1.10`](../linuxdoo
 It runs in any modern browser, renders the world at high resolution (including
 widescreen), and adds an in-game menu for changing the rules while you play.
 
-The game data is not part of this repository. You supply a WAD file (the free
-shareware `doom1.wad` works).
+Game data comes from WAD files in [`wads/`](wads):
+
+- **Freedoom Phase 1** (default): a free, redistributable replacement for DOOM with
+  4 episodes, 36 levels and all the monsters (BSD license, see
+  [`wads/COPYING-freedoom.txt`](wads/COPYING-freedoom.txt)).
+- **DOOM shareware** (`doom1.wad`): the original episode 1, which id Software allows
+  to be shared.
+
+The original commercial DOOM and DOOM II WADs are not included. If you own them,
+drop them on the start screen (see [Playing your own WADs](#playing-your-own-wads)).
 
 ## Contents
 
@@ -32,8 +40,7 @@ git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
 # 2. Build
 source ~/emsdk/emsdk_env.sh
 cd web
-cp /path/to/doom1.wad .        # not in the repo; *.wad is git-ignored
-make -f Makefile.web -j8       # writes build/doom.{js,wasm,data}
+make -f Makefile.web -j8       # writes build/doom.{js,wasm}; the page loads wads/ itself
 
 # 3. Serve and play
 python3 -m http.server 8000    # open http://localhost:8000/
@@ -44,34 +51,37 @@ are shared across the renderer.
 
 ## Deploying to Vercel
 
-The site is static, so there is nothing to build on Vercel itself. `web/dist/` is
-the finished site and **is committed**. Either of these Root Directory settings
-works for a Git-connected project (Framework Preset **Other**, empty Build Command):
+The site is static, so there is nothing to build on Vercel itself. The compiled game
+(`web/dist/build/`) and the WADs (`web/wads/`) are committed.
 
-| Root Directory | What is served |
+Git-connected project, in the Vercel project settings:
+
+| Setting | Value |
 | --- | --- |
-| `web` | `web/index.html`; [`vercel.json`](vercel.json) rewrites `/build/*` to `dist/build/*`. |
-| `web/dist` | `dist/index.html`; `dist/vercel.json` (from [`vercel.dist.json`](vercel.dist.json)) has no rewrite. |
+| Root Directory | `web` |
+| Framework Preset | Other |
+| Build Command | empty |
+| Output Directory | empty (the default) |
 
-CLI deploy instead:
+[`vercel.json`](vercel.json) rewrites `/build/*` to `/dist/build/*`, so the page finds
+the compiled files.
 
-```bash
-cd web/dist
-npx vercel deploy --prod
-```
-
-After changing any source, rebuild and commit the result:
+CLI deploy instead (`dist/` is a complete copy, including `wads/`):
 
 ```bash
-make -f Makefile.web dist    # refreshes dist/ (index.html, vercel.json, build/doom.{js,wasm,data})
-git add web/dist && git commit
+make -f Makefile.web dist
+cd dist && npx vercel deploy --prod
 ```
 
-- `doom.data` contains the WAD, so the shareware `doom1.wad` is what gets
-  published. Only deploy a WAD you are allowed to redistribute.
-- Both configs set caching for `build/` and basic security headers. Vercel serves
-  `.wasm` as `application/wasm` and compresses the files itself.
-- Any other static host works the same way: serve the contents of `dist/`.
+After changing any C or page source, rebuild and commit the result:
+
+```bash
+make -f Makefile.web dist
+git add web/dist web/index.html && git commit    # dist/wads is not committed: web/wads is the source
+```
+
+Licensing: Freedoom is BSD-licensed and `doom1.wad` is shareware, so both may be
+published. Never put a commercial WAD in `wads/` or `dist/`.
 
 ## Controls
 
@@ -80,7 +90,7 @@ git add web/dist && git commit
 | Move | `W` `A` `S` `D` (arrow Up / Down also move) |
 | Turn | Mouse (click the game to capture it), or arrow Left / Right |
 | Look up / down | Mouse, `PgUp` / `PgDn`; `Home` re-centers |
-| Fire | Left mouse button, or `Ctrl` |
+| Fire | Left mouse button, or `Ctrl` (a crosshair shows where you aim; toggle it in Options → Gameplay) |
 | Use / open doors | `E` or `Space` (`Space` jumps instead when Jump is on) |
 | Run | `Shift` (or turn on Always run) |
 | Strafe modifier | `Alt` |
@@ -123,8 +133,9 @@ row.
 | Jump (Space) | on / off | Adds a jump on `Space`. |
 | Always run | on / off | Inverts the run key. |
 | Mouse look | on / off | Mouse Y looks up and down instead of moving. |
+| Crosshair | on / off | Draws a small cross at the view center. |
 
-All rows except *Always run* and *Mouse look* are **locked while a demo plays or
+All rows except *Always run*, *Mouse look* and *Crosshair* are **locked while a demo plays or
 records and in netgames**, so recorded demos stay in sync. Settings are saved and
 restored between sessions.
 
@@ -132,8 +143,9 @@ restored between sessions.
 
 Drop one or more `.wad` files anywhere on the start screen before pressing Play.
 
-- An **IWAD** is renamed to the file name DOOM looks for (`doom1.wad`, `doom.wad`,
-  `doomu.wad` or `doom2.wad`), chosen from the maps inside it.
+- An **IWAD** replaces the chosen game. It is renamed to the file name DOOM looks for
+  (`doom1.wad`, `doom.wad`, `doomu.wad` or `doom2.wad`), chosen from the maps inside it.
+  This is how you play DOOM II, Ultimate DOOM or Freedoom Phase 2.
 - A **PWAD** is added with `-file`.
 
 Dropped files live in memory only. Config and savegames are stored in the
@@ -192,8 +204,8 @@ Test hooks, set as environment variables:
 ## Limitations
 
 - No music. MUS lumps load but nothing decodes them; the Music Volume slider does
-  nothing.
+  nothing. (Freedoom's music is in the WAD and is simply not played.)
 - No network play.
-- Shareware has no super shotgun sprites, so that weapon stays commercial-only.
+- Freedoom Phase 2 and DOOM II (super shotgun, new monsters) work only if you drop their WAD; they were not tested.
 - The browser build is tested headlessly; sound, touch controls and mouse-wheel
   weapon switching have not been tried in a real browser.

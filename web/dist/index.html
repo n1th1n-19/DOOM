@@ -23,6 +23,11 @@
   #start.over .card { border-color: var(--accent); }
   #start h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .08em; }
   #start ul { text-align: left; color: var(--dim); padding-left: 1.2em; }
+  #start ul:empty { display: none; }
+  #games { border: 0; padding: 0; margin: 12px 0; text-align: left; display: grid; gap: 8px; }
+  #games label { display: block; cursor: pointer; }
+  #games span { color: var(--dim); }
+  #start .card.busy button { opacity: .5; pointer-events: none; }
   #start .keys { color: var(--dim); font-size: 12px; margin-top: 14px; text-align: left; }
   #touch { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: none; }
   #touch.on { display: block; }
@@ -43,12 +48,19 @@
 <div id="start">
   <div class="card">
     <h1>DOOM</h1>
-    <p>Drop a <b>.wad</b> file anywhere on this page to play it, or start the built-in shareware episode.</p>
-    <ul id="files"><li>doom1.wad (built in, shareware)</li></ul>
+    <p>Pick the game data, then press Play. You can also drop a <b>.wad</b> file anywhere on this page to
+       play your own copy of DOOM, DOOM II or a mod.</p>
+    <fieldset id="games">
+      <label><input type="radio" name="game" value="freedoom1" checked>
+        <b>Freedoom Phase 1</b> — free game data: 4 episodes, 36 levels, all the monsters <span>(29 MB)</span></label>
+      <label><input type="radio" name="game" value="shareware">
+        <b>DOOM shareware</b> — the original episode 1, 9 levels <span>(4 MB)</span></label>
+    </fieldset>
+    <ul id="files"></ul>
     <p><button id="play">Play</button></p>
     <div class="keys">
       <b>Controls</b> — W A S D move, mouse looks (click to capture), left mouse / Ctrl fire, E (or Space) use,
-      Shift run, 1–7 or mouse wheel weapons, PgUp / PgDn / Home look up / down / center, Esc menu.
+      Shift run, 1–7 or mouse wheel weapons, a crosshair you can turn off under Options → Gameplay, PgUp / PgDn / Home look up / down / center, Esc menu.
       Options → Gameplay changes the rules while you play.
     </div>
   </div>
@@ -163,7 +175,43 @@
     onDoomQuit: () => { status.textContent = 'Game exited. Reload to play again.'; },
   };
 
-  $('play').onclick = () => {
+  const GAMES = {
+    freedoom1: { url: 'wads/freedoom1.wad', name: 'doomu.wad' },   // retail: 4 episodes
+    shareware: { url: 'wads/doom1.wad',     name: 'doom1.wad' },
+  };
+
+  async function fetchWad(game) {
+    const res = await fetch(game.url);
+    if (!res.ok) throw new Error(game.url + ': HTTP ' + res.status);
+    const total = +res.headers.get('content-length') || 0;
+    const reader = res.body.getReader();
+    const chunks = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      status.textContent = 'Downloading game data… ' + (total ? Math.round(100 * got / total) + '%' : (got >> 20) + ' MB');
+    }
+    const data = new Uint8Array(got); let off = 0;
+    for (const c of chunks) { data.set(c, off); off += c.length; }
+    return data;
+  }
+
+  $('play').onclick = async () => {
+    const card = document.querySelector('#start .card');
+    card.classList.add('busy');
+    try {
+      // a dropped IWAD replaces the chosen game
+      if (!dropped.some((f) => f.iwad)) {
+        const game = GAMES[document.querySelector('input[name=game]:checked').value];
+        dropped.unshift({ name: game.name, data: await fetchWad(game), iwad: true });
+      }
+    } catch (e) {
+      card.classList.remove('busy');
+      status.className = 'error'; status.textContent = 'Could not load the game data: ' + e.message;
+      return;
+    }
+    status.textContent = 'Starting…';
     start.hidden = true; $('bar').hidden = false;
     const s = document.createElement('script');
     s.src = 'build/doom.js';

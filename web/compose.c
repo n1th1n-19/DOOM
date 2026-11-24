@@ -10,8 +10,44 @@
 #include "doomstat.h"
 #include "v_video.h"
 #include "compose.h"
+#include "m_gameplay.h"
+
+extern boolean menuactive;
+extern boolean paused;
 
 static int ux[MAXWIDTH];
+
+static void Rect (uint32_t* dst, int W, int H, int x0, int y0, int x1, int y1, uint32_t c)
+{
+    int x, y;
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 > W) x1 = W;
+    if (y1 > H) y1 = H;
+    for (y = y0; y < y1; y++)
+	for (x = x0; x < x1; x++)
+	    dst[y*W+x] = c;
+}
+
+// Four short arms around the view center, white with a black outline.
+static void Crosshair (uint32_t* dst, int W, int H)
+{
+    int cx = W/2, cy = renderheight/2;
+    int t   = H/360 > 1 ? H/360 : 1;		// thickness
+    int gap = 2*t;
+    int arm = H/70 > 4 ? H/70 : 4;
+    int pass;
+
+    for (pass = 0; pass < 2; pass++)
+    {
+	int o = pass == 0 ? 1 : 0;		// outline grows each rect by o
+	uint32_t c = pass == 0 ? 0xff000000u : 0xffffffffu;
+	Rect (dst, W, H, cx-gap-arm-o, cy-t/2-o, cx-gap+o,     cy-t/2+t+o, c);	// left
+	Rect (dst, W, H, cx+gap-o,     cy-t/2-o, cx+gap+arm+o, cy-t/2+t+o, c);	// right
+	Rect (dst, W, H, cx-t/2-o, cy-gap-arm-o, cx-t/2+t+o, cy-gap+o,     c);	// up
+	Rect (dst, W, H, cx-t/2-o, cy+gap-o,     cx-t/2+t+o, cy+gap+arm+o, c);	// down
+    }
+}
 
 void Compose (uint32_t* dst, const uint32_t* pal)
 {
@@ -45,4 +81,7 @@ void Compose (uint32_t* dst, const uint32_t* pal)
 		out[x] = ux[x] < 0 ? black : pal[uirow[ux[x]]];
 	}
     }
+
+    if (render3d && gp.crosshair && !menuactive && !paused)
+	Crosshair (dst, W, H);
 }

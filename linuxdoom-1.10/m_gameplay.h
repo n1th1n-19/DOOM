@@ -24,6 +24,7 @@ typedef struct
     int	respawn;	// bool, monsters respawn
     int	jump;		// bool, Space jumps
     int	alwaysrun;	// bool, not locked: it only changes what the ticcmd records
+    int	crosshair;	// bool, not locked: drawn by the video layer
 } gameplay_t;
 
 extern gameplay_t	gp;
