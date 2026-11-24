@@ -291,7 +291,7 @@ default_t	defaults[] =
     {"gp_infinite_ammo",&gp.infammo, 0},
     {"gp_god_mode",&gp.god, 0},
     {"gp_respawn",&gp.respawn, 0},
-    {"gp_jump",&gp.jump, 0},
+    {"gp_jump_enabled",&gp.jump, 1},
     {"gp_always_run",&gp.alwaysrun, 0},
     {"gp_crosshair",&gp.crosshair, 1},
     {"use_mouse",&usemouse, 1},

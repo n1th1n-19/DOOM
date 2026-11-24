@@ -29,6 +29,16 @@ void I_StartTic (void)
     if (++n == 30 && getenv ("DOOM_LOOK"))
 	R_AddLook (atoi (getenv ("DOOM_LOOK")));
 
+    // test hook: DOOM_JUMPTEST=1 holds Space at tic 60 and prints the height above the floor
+    if (getenv ("DOOM_JUMPTEST"))
+    {
+	mobj_t* pl = players[consoleplayer].mo;
+	if (n == 60) { event_t e; e.type = ev_keydown; e.data1 = ' '; D_PostEvent (&e); }
+	if (n >= 58 && n <= 80)
+	    fprintf (stderr, "JUMP tic %d height above floor %d\n", n, (pl->z - pl->floorz) >> FRACBITS);
+	if (n == 66) { event_t e; e.type = ev_keyup; e.data1 = ' '; D_PostEvent (&e); }
+    }
+
     // test hook: DOOM_DOORS=1 lists every door line (special, midpoint) at tic 50
     if (n == 50 && getenv ("DOOM_DOORS"))
     {

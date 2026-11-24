@@ -91,7 +91,8 @@ published. Never put a commercial WAD in `wads/` or `dist/`.
 | Turn | Mouse (click the game to capture it), or arrow Left / Right |
 | Look up / down | Mouse, `PgUp` / `PgDn`; `Home` re-centers |
 | Fire | Left mouse button, or `Ctrl` (a crosshair shows where you aim; toggle it in Options → Gameplay) |
-| Use / open doors | `E` or `Space` (`Space` jumps instead when Jump is on) |
+| Jump | `Space` (on by default; turn it off under Options → Gameplay) |
+| Use / open doors | `E` (`Space` also uses when Jump is off) |
 | Run | `Shift` (or turn on Always run) |
 | Strafe modifier | `Alt` |
 | Weapons | `1`–`7`, or the mouse wheel |
@@ -140,7 +141,7 @@ row.
 | Infinite ammo | on / off | Refills ammo every tic. |
 | God mode | on / off | Same rules as the `iddqd` cheat for damage under 1000. |
 | Monsters respawn | on / off | The nightmare respawn rule at any skill. |
-| Jump (Space) | on / off | Adds a jump on `Space`. |
+| Jump (Space) | on / off | `Space` jumps (default on). When off, `Space` uses doors like `E`. |
 | Always run | on / off | Inverts the run key. |
 | Mouse look | on / off | Mouse Y looks up and down instead of moving. |
 | Crosshair | on / off | Draws a small cross at the view center. |

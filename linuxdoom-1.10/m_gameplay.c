@@ -4,7 +4,7 @@
 
 #define VANILLA_FRICTION	0xe800
 
-gameplay_t gp  = { 100, 100, 100, 100, 100, 100, 100, 0, 0, 0, 0, 0, 1 };
+gameplay_t gp  = { 100, 100, 100, 100, 100, 100, 100, 0, 0, 0, 1, 0, 1 };
 gameplay_t geff = { 100, FRACUNIT, VANILLA_FRICTION, 100, 100, 100, 100, 0, 0, 0, 0, 0, 1 };
 
 extern boolean	respawnparm;
@@ -19,7 +19,8 @@ void GP_Reset (void)
 {
     gp.movespeed = gp.gravity = gp.friction = 100;
     gp.monhealth = gp.monspeed = gp.mondamage = gp.plrdamage = 100;
-    gp.infammo = gp.god = gp.respawn = gp.jump = 0;
+    gp.infammo = gp.god = gp.respawn = 0;
+    gp.jump = 1;		// on by default: Space jumps, E uses
     // alwaysrun and crosshair are preferences, left alone
 }
 
