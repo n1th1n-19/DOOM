@@ -189,6 +189,7 @@ boolean*	mousebuttons = &mousearray[1];		// allow [-1]
 // mouse values are used once 
 int             mousex;
 int		mousey;         
+int		usemouselook = 1;	// mouse y looks up/down instead of moving
 
 int             dclicktime;
 int		dclickstate;
@@ -457,6 +458,8 @@ extern  gamestate_t     wipegamestate;
 void G_DoLoadLevel (void) 
 { 
     int             i; 
+    extern int viewlook;
+    viewlook = 0;
 
     // Set the sky map.
     // First thing, we have a dummy sky texture name,
@@ -590,6 +593,11 @@ boolean G_Responder (event_t* ev)
 	mousebuttons[2] = ev->data1 & 4; 
 	mousex = ev->data2*(mouseSensitivity+5)/10; 
 	mousey = ev->data3*(mouseSensitivity+5)/10; 
+	if (usemouselook)
+	{
+	    R_AddLook (mousey/4);	// event y is scaled by 4, see i_video
+	    mousey = 0;
+	}
 	return true;    // eat events 
  
       case ev_joystick: 

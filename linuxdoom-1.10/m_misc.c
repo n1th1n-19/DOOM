@@ -192,6 +192,7 @@ extern int	joybuse;
 extern int	joybspeed;
 
 extern int	viewwidth;
+extern int	usemouselook;
 extern int	viewheight;
 
 extern int	mouseSensitivity;
@@ -278,6 +279,7 @@ default_t	defaults[] =
     {"mousetype", (int*)&mousetype, (int)"microsoft"},
 #endif
 
+    {"mouse_look",&usemouselook, 1},
     {"use_mouse",&usemouse, 1},
     {"mouseb_fire",&mousebfire,0},
     {"mouseb_strafe",&mousebstrafe,1},

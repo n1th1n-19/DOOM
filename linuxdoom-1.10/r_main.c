@@ -106,6 +106,18 @@ angle_t			xtoviewangle[MAXWIDTH+1];
 
 // Weapon sprite drop so it stays at the bottom of the hi-res view.
 fixed_t			weaponyshift;
+static fixed_t		baseweaponshift;
+
+// Look up/down by y-shear: the horizon moves, the view is not rotated.
+// Rows of offset, positive = looking up. Local to the view, not part of ticcmd
+//  (so demos and netplay are unaffected).
+int			viewlook;
+extern boolean		gamekeydown[256];
+
+void R_AddLook (int rows)
+{
+    viewlook += rows;
+}
 // Largest wall scale (the original clamps at 64.0 for a 320 wide view).
 static fixed_t		maxwallscale = 64*FRACUNIT;
 
@@ -733,8 +745,9 @@ void R_ExecuteSetViewSize (void)
     {
 	// original weapon art sits at the bottom of a 168 (or 200) row view
 	int uirows = uifullscreen ? SCREENHEIGHT : 168;
-	weaponyshift = FixedDiv (centeryfrac - uirows/2*pspritescale,
-				 pspritescale);
+	baseweaponshift = FixedDiv (centeryfrac - uirows/2*pspritescale,
+				    pspritescale);
+	weaponyshift = baseweaponshift;
     }
     
     // thing clipping
@@ -875,6 +888,28 @@ void R_SetupFrame (player_t* player)
     int		i;
     
     viewplayer = player;
+
+    // y-shear: move the horizon, rebuild the row->distance table
+    if (gamekeydown[KEY_PGUP])
+	viewlook += viewheight/60 + 1;
+    if (gamekeydown[KEY_PGDN])
+	viewlook -= viewheight/60 + 1;
+    if (gamekeydown[KEY_HOME])
+	viewlook = 0;
+    if (viewlook > viewheight*3/8)
+	viewlook = viewheight*3/8;
+    if (viewlook < -viewheight*3/8)
+	viewlook = -viewheight*3/8;
+    centery = viewheight/2 + viewlook;
+    centeryfrac = centery<<FRACBITS;
+    for (i=0 ; i<viewheight ; i++)
+    {
+	fixed_t dy = abs (((i-centery)<<FRACBITS)+FRACUNIT/2);
+	yslope[i] = FixedDiv (projection, dy);
+    }
+    // the weapon stays put on screen
+    weaponyshift = baseweaponshift - FixedDiv (viewlook<<FRACBITS, pspritescale);
+
     viewx = player->mo->x;
     viewy = player->mo->y;
     viewangle = player->mo->angle + viewangleoffset;

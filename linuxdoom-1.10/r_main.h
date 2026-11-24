@@ -40,6 +40,7 @@ extern fixed_t		viewsin;
 
 extern int		viewwidth;
 extern int		viewheight;
+void R_AddLook (int rows);
 extern int		viewwindowx;
 extern int		viewwindowy;
 

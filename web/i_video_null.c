@@ -9,6 +9,7 @@
 #include "v_video.h"
 #include "d_main.h"
 #include "doomdef.h"
+#include "r_main.h"
 #include "compose.h"
 
 static byte pal[768];
@@ -16,7 +17,13 @@ static int  frame;
 
 void I_ShutdownGraphics (void) { }
 void I_StartFrame (void) { }
-void I_StartTic (void) { }
+void I_StartTic (void)
+{
+    // test hook: DOOM_LOOK=<rows> shears the view once, after the level started
+    static int n;
+    if (++n == 30 && getenv ("DOOM_LOOK"))
+	R_AddLook (atoi (getenv ("DOOM_LOOK")));
+}
 void I_UpdateNoBlit (void) { }
 void I_InitGraphics (void) { }
 

@@ -43,6 +43,9 @@ static int TranslateKey (SDL_Keycode k)
       case SDLK_RCTRL:      return KEY_RCTRL;
       case SDLK_LALT:
       case SDLK_RALT:       return KEY_RALT;
+      case SDLK_PAGEUP:     return KEY_PGUP;
+      case SDLK_PAGEDOWN:   return KEY_PGDN;
+      case SDLK_HOME:       return KEY_HOME;
       case SDLK_F11:        return KEY_F11;
       case SDLK_F12:        return KEY_F12;
     }

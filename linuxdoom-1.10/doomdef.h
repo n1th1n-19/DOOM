@@ -277,6 +277,11 @@ typedef enum
 #define KEY_BACKSPACE	127
 #define KEY_PAUSE	0xff
 
+// look up/down (view y-shear)
+#define KEY_PGUP	(0x80+0x49)
+#define KEY_PGDN	(0x80+0x51)
+#define KEY_HOME	(0x80+0x47)
+
 #define KEY_EQUALS	0x3d
 #define KEY_MINUS	0x2d
 
