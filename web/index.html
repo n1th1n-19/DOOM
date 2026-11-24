@@ -2,23 +2,73 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DOOM</title>
 <style>
-  :root { color-scheme: dark; }
-  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
-  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box; }
-  canvas { background: #111; image-rendering: pixelated; outline: none; }
-  #status { min-height: 1.4em; text-align: center; }
+  [hidden] { display: none !important; }
+  :root { color-scheme: dark; --fg: #ddd; --dim: #888; --accent: #d33; --bg: #000; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; box-sizing: border-box; overflow: hidden; }
+  canvas { background: #111; outline: none; image-rendering: pixelated; touch-action: none; }
+  canvas.smooth { image-rendering: auto; }
+  #bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; min-height: 28px; }
+  #bar button, #start button { background: #222; color: var(--fg); border: 1px solid #444; border-radius: 6px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  #bar button:hover, #start button:hover { border-color: var(--accent); }
+  #fps { color: var(--dim); font-variant-numeric: tabular-nums; min-width: 6ch; }
+  #status { color: var(--dim); text-align: center; max-width: 80ch; }
   #status.error { color: #ff6b6b; }
+  #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 5; padding: 16px; }
+  #start .card { max-width: 56ch; border: 2px dashed #444; border-radius: 12px; padding: 24px; text-align: center; }
+  #start.over .card { border-color: var(--accent); }
+  #start h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .08em; }
+  #start ul { text-align: left; color: var(--dim); padding-left: 1.2em; }
+  #start .keys { color: var(--dim); font-size: 12px; margin-top: 14px; text-align: left; }
+  #touch { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: none; }
+  #touch.on { display: block; }
+  #touch button { pointer-events: auto; position: absolute; width: 56px; height: 56px; border-radius: 50%; border: 2px solid #fff6; background: #0007; color: #fff; font: 600 13px system-ui; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #touch button.down { background: #d33a; }
 </style>
 </head>
 <body>
 <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+<div id="bar" hidden>
+  <span id="fps">– fps</span>
+  <button id="smooth" title="Smooth or pixelated scaling">Smooth: off</button>
+  <button id="full">Fullscreen</button>
+  <button id="touchbtn" title="On-screen touch controls">Touch controls</button>
+</div>
 <div id="status">Loading…</div>
+
+<div id="start">
+  <div class="card">
+    <h1>DOOM</h1>
+    <p>Drop a <b>.wad</b> file anywhere on this page to play it, or start the built-in shareware episode.</p>
+    <ul id="files"><li>doom1.wad (built in, shareware)</li></ul>
+    <p><button id="play">Play</button></p>
+    <div class="keys">
+      <b>Controls</b> — W A S D move, mouse looks (click to capture), left mouse / Ctrl fire, E (or Space) use,
+      Shift run, 1–7 or mouse wheel weapons, PgUp / PgDn / Home look up / down / center, Esc menu.
+      Options → Gameplay changes the rules while you play.
+    </div>
+  </div>
+</div>
+
+<div id="touch">
+  <button data-key="w"      style="left:76px;  bottom:150px">▲</button>
+  <button data-key="s"      style="left:76px;  bottom:20px">▼</button>
+  <button data-key="a"      style="left:12px;  bottom:85px">⇦</button>
+  <button data-key="d"      style="left:140px; bottom:85px">⇨</button>
+  <button data-key="ArrowLeft"  style="left:12px;  bottom:215px">↺</button>
+  <button data-key="ArrowRight" style="left:140px; bottom:215px">↻</button>
+  <button data-key="Control" style="right:16px; bottom:110px; width:72px; height:72px">FIRE</button>
+  <button data-key="e"      style="right:100px; bottom:40px">USE</button>
+  <button data-key="Enter"  style="right:16px; bottom:30px">OK</button>
+  <button data-key="Escape" style="right:16px; top:16px">MENU</button>
+</div>
+
 <script>
-  const status = document.getElementById('status');
-  const canvas = document.getElementById('canvas');
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('canvas'), status = $('status');
 
   // Render size: ?h=720 (default) and ?w= (default: the window's aspect, 4:3 .. 8:3).
   const q = new URLSearchParams(location.search);
@@ -26,25 +76,132 @@
   const aspect = Math.min(8 / 3, Math.max(4 / 3, innerWidth / Math.max(1, innerHeight - 60)));
   const W = Math.min(1920, (+q.get('w') || Math.round(H * aspect)) & ~1);
   function fit() {
-    const k = Math.min(innerWidth / W, (innerHeight - 60) / H);
+    const k = Math.min((innerWidth - 24) / W, (innerHeight - 70) / H);
     canvas.style.width = Math.floor(W * k) + 'px';
     canvas.style.height = Math.floor(H * k) + 'px';
   }
   fit(); addEventListener('resize', fit);
 
+  // ---- dropped WADs -------------------------------------------------------
+  const dropped = [];   // { name, data }
+  // Pick the file name DOOM looks for (IdentifyVersion in d_main.c).
+  function iwadName(name, bytes) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const n = dv.getInt32(4, true), off = dv.getInt32(8, true);
+    const lumps = new Set();
+    for (let i = 0; i < n; i++) {
+      let s = '';
+      for (let j = 0; j < 8; j++) { const c = bytes[off + 16 * i + 8 + j]; if (!c) break; s += String.fromCharCode(c); }
+      lumps.add(s);
+    }
+    if (lumps.has('MAP01')) return 'doom2.wad';
+    if (lumps.has('E4M1'))  return 'doomu.wad';
+    if (lumps.has('E3M1'))  return 'doom.wad';
+    return 'doom1.wad';
+  }
+  async function addFile(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const magic = String.fromCharCode(...bytes.slice(0, 4));
+    if (magic !== 'IWAD' && magic !== 'PWAD') { alert(file.name + ' is not a WAD file'); return; }
+    const name = magic === 'IWAD' ? iwadName(file.name, bytes) : file.name.toLowerCase().replace(/[^a-z0-9._-]/g, '_');
+    dropped.push({ name, data: bytes, iwad: magic === 'IWAD' });
+    const li = document.createElement('li');
+    li.textContent = `${file.name} (${magic}${magic === 'IWAD' ? ' → ' + name : ''})`;
+    $('files').appendChild(li);
+  }
+  const start = $('start');
+  addEventListener('dragover', (e) => { e.preventDefault(); start.classList.add('over'); });
+  addEventListener('dragleave', () => start.classList.remove('over'));
+  addEventListener('drop', async (e) => {
+    e.preventDefault(); start.classList.remove('over');
+    if (start.hidden) return;   // only before the game starts
+    for (const f of e.dataTransfer.files) await addFile(f);
+  });
+
+  // ?debug shows the game's console output on the page (for testing)
+  const logEl = document.createElement('pre');
+  logEl.style.cssText = 'position:fixed;left:8px;top:8px;margin:0;font:11px monospace;color:#9f9;background:#000a;max-width:60vw;white-space:pre-wrap;z-index:9';
+  const lines = [];
+  function pageLog(t) { if (!q.has('debug')) return; lines.push(t); if (lines.length > 30) lines.shift(); logEl.textContent = lines.join('\n'); if (!logEl.parentNode) document.body.appendChild(logEl); }
+
+  addEventListener('error', (e) => pageLog('ERR ' + e.message));
+  addEventListener('unhandledrejection', (e) => pageLog('REJECT ' + (e.reason && e.reason.stack || e.reason)));
+
+  // ---- game --------------------------------------------------------------
   var Module = {
-    arguments: ['-width', String(W), '-height', String(H)],
+    arguments: ['-width', String(W), '-height', String(H), ...(q.has('debug') ? ['-framelog'] : [])],
     canvas: canvas,
-    // doom.data/doom.wasm sit in build/, but the page lives one level up
-    locateFile: (p) => 'build/' + p,
-    print: (t) => console.log(t),
-    printErr: (t) => console.warn(t),
+    locateFile: (p) => 'build/' + p,   // doom.data/doom.wasm sit in build/
+    print: (t) => { console.log(t); pageLog(t); },
+    printErr: (t) => { console.warn(t); pageLog(t); },
     setStatus: (t) => { if (t) status.textContent = t; },
-    onRuntimeInitialized: () => { status.textContent = 'Click the game to capture the mouse. WASD-free: arrows move, Ctrl fire, Space use, Shift run.'; },
+    preRun: [function () {
+      // IWADs/PWADs live in memory at /, config and savegames persist in IndexedDB at /persist
+      ENV.DOOMWADDIR = '/'; ENV.HOME = '/persist';
+      for (const f of dropped) {
+        FS.writeFile('/' + f.name, f.data);
+        if (!f.iwad) Module.arguments.push('-file', '/' + f.name);
+      }
+      FS.mkdir('/persist');
+      FS.mount(IDBFS, {}, '/persist');
+      addRunDependency('idbfs');
+      FS.syncfs(true, () => { FS.chdir('/persist'); removeRunDependency('idbfs'); });
+    }],
+    onRuntimeInitialized: () => {
+      pageLog('runtime initialized');
+      status.textContent = 'Click the game to capture the mouse. Esc for the menu.';
+      const save = () => { try { Module.ccall('Web_SaveConfig', null, [], []); FS.syncfs(false, () => {}); } catch (e) {} };
+      setInterval(save, 5000);
+      addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+      addEventListener('pagehide', save);
+    },
     onDoomError: (msg) => { status.className = 'error'; status.textContent = 'DOOM error: ' + msg; },
     onDoomQuit: () => { status.textContent = 'Game exited. Reload to play again.'; },
   };
+
+  $('play').onclick = () => {
+    start.hidden = true; $('bar').hidden = false;
+    const s = document.createElement('script');
+    s.src = 'build/doom.js';
+    document.body.appendChild(s);
+    canvas.focus();
+  };
+
+  if (q.has('autostart')) $('play').click();   // handy for tests
+
+  // ---- toolbar -----------------------------------------------------------
+  let frames = 0, last = performance.now();
+  (function tick(now) {
+    frames++;
+    if (now - last >= 1000) { $('fps').textContent = Math.round(frames * 1000 / (now - last)) + ' fps'; frames = 0; last = now; }
+    requestAnimationFrame(tick);
+  })(last);
+  $('smooth').onclick = () => {
+    const on = canvas.classList.toggle('smooth');
+    $('smooth').textContent = 'Smooth: ' + (on ? 'on' : 'off');
+  };
+  $('full').onclick = () => { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); };
+  addEventListener('fullscreenchange', fit);
+
+  // ---- touch controls: synthetic key events the SDL layer reads ---------
+  const CODES = { w: 'KeyW', s: 'KeyS', a: 'KeyA', d: 'KeyD', e: 'KeyE', Control: 'ControlLeft',
+                  Enter: 'Enter', Escape: 'Escape', ArrowLeft: 'ArrowLeft', ArrowRight: 'ArrowRight' };
+  const KEYCODES = { w: 87, s: 83, a: 65, d: 68, e: 69, Control: 17, Enter: 13, Escape: 27, ArrowLeft: 37, ArrowRight: 39 };
+  function fire(type, key) {
+    const ev = new KeyboardEvent(type, { key, code: CODES[key], bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'keyCode', { get: () => KEYCODES[key] });
+    Object.defineProperty(ev, 'which', { get: () => KEYCODES[key] });
+    (document.activeElement && document.activeElement !== document.body ? document.activeElement : window).dispatchEvent(ev);
+  }
+  for (const b of document.querySelectorAll('#touch button')) {
+    const key = b.dataset.key;
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); b.classList.add('down'); fire('keydown', key); });
+    const up = (e) => { b.classList.remove('down'); fire('keyup', key); };
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  }
+  const touch = $('touch');
+  $('touchbtn').onclick = () => touch.classList.toggle('on');
+  if (matchMedia('(pointer: coarse)').matches) touch.classList.add('on');
 </script>
-<script src="build/doom.js"></script>
 </body>
 </html>

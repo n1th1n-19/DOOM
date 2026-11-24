@@ -189,6 +189,7 @@ boolean*	mousebuttons = &mousearray[1];		// allow [-1]
 // mouse values are used once 
 int             mousex;
 int		mousey;         
+static int	weaponwheel;	// -1/+1: step to the previous/next owned weapon
 int		usemouselook = 1;	// mouse y looks up/down instead of moving
 
 int             dclicktime;
@@ -365,6 +366,26 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	    break; 
 	}
     
+    // mouse wheel
+    if (weaponwheel)
+    {
+	player_t*	p = &players[consoleplayer];
+	int		w = p->pendingweapon != wp_nochange ?
+			    p->pendingweapon : p->readyweapon;
+	int		n;
+
+	for (n=0 ; n<NUMWEAPONS ; n++)
+	{
+	    w = (w + weaponwheel + NUMWEAPONS) % NUMWEAPONS;
+	    if (p->weaponowned[w])
+	    {
+		cmd->buttons |= BT_CHANGE | (w<<BT_WEAPONSHIFT);
+		break;
+	    }
+	}
+	weaponwheel = 0;
+    }
+
     // mouse
     if (mousebuttons[mousebforward]) 
 	forward += forwardmove[speed];
@@ -583,6 +604,11 @@ boolean G_Responder (event_t* ev)
 	    sendpause = true; 
 	    return true; 
 	} 
+	if (ev->data1 == KEY_MWHEELUP || ev->data1 == KEY_MWHEELDOWN)
+	{
+	    weaponwheel = ev->data1 == KEY_MWHEELUP ? -1 : 1;
+	    return true;
+	}
 	if (ev->data1 <NUMKEYS) 
 	    gamekeydown[ev->data1] = true; 
 	return true;    // eat key down events 

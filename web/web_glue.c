@@ -17,3 +17,12 @@ void Web_Error (const char* msg)
 {
     EM_ASM({ if (Module.onDoomError) Module.onDoomError(UTF8ToString($0)); }, msg);
 }
+
+// Called from the page to persist the config file (normally written on quit,
+// which never happens in a browser tab).
+extern void M_SaveDefaults (void);
+
+EMSCRIPTEN_KEEPALIVE void Web_SaveConfig (void)
+{
+    M_SaveDefaults ();
+}

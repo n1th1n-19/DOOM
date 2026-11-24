@@ -10,6 +10,7 @@
 #include "d_event.h"
 #include "doomdef.h"
 #include "compose.h"
+#include "m_argv.h"
 
 static SDL_Window*   window;
 static SDL_Renderer* renderer;
@@ -126,6 +127,14 @@ void I_StartTic (void)
 		D_PostEvent (&event);
 	    }
 	    break;
+	  case SDL_MOUSEWHEEL:
+	    if (e.wheel.y)
+	    {
+		event.type = ev_keydown;
+		event.data1 = e.wheel.y > 0 ? KEY_MWHEELUP : KEY_MWHEELDOWN;
+		D_PostEvent (&event);
+	    }
+	    break;
 	  case SDL_QUIT:
 	    I_Quit ();
 	    break;
@@ -138,6 +147,14 @@ void I_UpdateNoBlit (void) { }
 void I_FinishUpdate (void)
 {
     Compose (pixels32, palette32);
+    {
+	// -framelog: print a line every 100 frames (debugging in the browser)
+	static int frames = -1;
+	if (frames < 0)
+	    frames = M_CheckParm ("-framelog") ? 0 : -2;
+	if (frames >= 0 && ++frames % 100 == 1)
+	    printf ("frame %d, game state %d, render3d %d\n", frames, gamestate, render3d);
+    }
 
     SDL_UpdateTexture (texture, NULL, pixels32, winwidth*sizeof(Uint32));
     SDL_RenderClear (renderer);

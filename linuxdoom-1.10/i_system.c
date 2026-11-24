@@ -53,7 +53,11 @@ void Web_Error (const char* msg);
 
 
 
+#ifdef __EMSCRIPTEN__
+int	mb_used = 16;	// room for big PWADs
+#else
 int	mb_used = 6;
+#endif
 
 
 void

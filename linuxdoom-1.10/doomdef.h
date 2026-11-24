@@ -282,6 +282,10 @@ typedef enum
 #define KEY_PGDN	(0x80+0x51)
 #define KEY_HOME	(0x80+0x47)
 
+// mouse wheel: next / previous weapon
+#define KEY_MWHEELUP	0xe0
+#define KEY_MWHEELDOWN	0xe1
+
 #define KEY_EQUALS	0x3d
 #define KEY_MINUS	0x2d
 
