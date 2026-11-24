@@ -101,6 +101,7 @@ Add these to the URL, for example `index.html?h=1080&debug`.
 | `w=<cols>` | Render width, up to 1920 (default: the window's aspect, between 4:3 and 8:3). |
 | `debug` | Shows the game's console output on the page and logs every 100th frame. |
 | `autostart` | Skips the start screen. |
+| `menu` | Opens the title screen and attract demos instead of going straight into E1M1. |
 
 ## Options → Gameplay
 
