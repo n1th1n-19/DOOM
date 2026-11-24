@@ -10,6 +10,8 @@
 #include "d_main.h"
 #include "doomdef.h"
 #include "r_main.h"
+#include "p_local.h"
+#include "p_mobj.h"
 #include "d_event.h"
 #include "compose.h"
 
@@ -24,6 +26,38 @@ void I_StartTic (void)
     static int n;
     if (++n == 30 && getenv ("DOOM_LOOK"))
 	R_AddLook (atoi (getenv ("DOOM_LOOK")));
+
+    // test hook: DOOM_STATS=1 prints monster counts at tic 100
+    if (n == 100 && getenv ("DOOM_STATS"))
+    {
+	thinker_t* th; int alive = 0, dead = 0, shown = 0;
+	for (th = thinkercap.next ; th != &thinkercap ; th = th->next)
+	{
+	    mobj_t* mo;
+	    if (th->function.acp1 != (actionf_p1)P_MobjThinker) continue;
+	    mo = (mobj_t*)th;
+	    if (!(mo->flags & MF_COUNTKILL) && !(mo->flags & MF_CORPSE)) continue;
+	    if (mo->health > 0 && (mo->flags & MF_COUNTKILL)) alive++; else dead++;
+	    if (shown++ < 8) fprintf (stderr, "mobj type %d health %d flags %x\n", mo->type, mo->health, mo->flags);
+	}
+	{
+	    mobj_t* pl = players[consoleplayer].mo; int best = 1<<30;
+	    for (th = thinkercap.next ; th != &thinkercap ; th = th->next)
+	    {
+		mobj_t* mo;
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker) continue;
+		mo = (mobj_t*)th;
+		if ((mo->flags & MF_COUNTKILL) && mo->health > 0)
+		{
+		    int d = P_AproxDistance (mo->x - pl->x, mo->y - pl->y) >> FRACBITS;
+		    if (d < best) best = d;
+		}
+	    }
+	    fprintf (stderr, "nearest living monster: %d units (player radius 16)\n", best);
+	}
+	fprintf (stderr, "STATS alive=%d dead/corpse=%d skill=%d\n", alive, dead, gameskill);
+    }
+
 
     // test hook: DOOM_KEYS=27,173,13 presses these keys, one every 4 tics
     //  (from tic 40), e.g. to open menus

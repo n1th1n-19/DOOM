@@ -142,9 +142,11 @@
 
   // ---- game --------------------------------------------------------------
   var Module = {
-    // Start in E1M1 right away; ?menu shows the title screen and demos first.
+    // Start in E1M1 right away. ?ep= ?map= ?skill=1..5 pick the level and difficulty;
+    // ?menu shows the title screen and demos first.
     arguments: ['-width', String(W), '-height', String(H),
-                ...(q.has('menu') ? [] : ['-warp', '1', '1']),
+                ...(q.has('menu') ? [] : ['-warp', q.get('ep') || '1', q.get('map') || '1',
+                                          '-skill', q.get('skill') || '3']),
                 ...(q.has('debug') ? ['-framelog'] : [])],
     canvas: canvas,
     locateFile: (p) => 'build/' + p,   // doom.data/doom.wasm sit in build/
