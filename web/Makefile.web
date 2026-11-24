@@ -33,4 +33,13 @@ test: $(BUILD)/doomtest.js
 $(BUILD)/doomtest.js: $(TESTOBJS)
 	emcc $(TESTOBJS) -o $@ -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=1048576 \
 		-sENVIRONMENT=node -sNODERAWFS -sEXIT_RUNTIME=1
-.PHONY: all clean test
+
+# Static site for hosting (Vercel etc.): make -f Makefile.web dist
+# then: cd dist && vercel deploy --prod
+dist: all
+	@test -f $(BUILD)/doom.data || { echo "dist: build/doom.data missing - put doom1.wad here and rebuild"; exit 1; }
+	rm -rf dist
+	mkdir -p dist/build
+	cp index.html vercel.json dist/
+	cp $(BUILD)/doom.js $(BUILD)/doom.wasm $(BUILD)/doom.data dist/build/
+.PHONY: all clean test dist
