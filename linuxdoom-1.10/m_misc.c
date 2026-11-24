@@ -240,6 +240,18 @@ default_t	defaults[] =
     
 
 #ifdef NORMALUNIX
+#ifdef __EMSCRIPTEN__
+    // Browser build: WASD + arrows turn, E use (Space also uses, see g_game.c).
+    {"key_right",&key_right, KEY_RIGHTARROW},
+    {"key_left",&key_left, KEY_LEFTARROW},
+    {"key_up",&key_up, 'w'},
+    {"key_down",&key_down, 's'},
+    {"key_strafeleft",&key_strafeleft, 'a'},
+    {"key_straferight",&key_straferight, 'd'},
+
+    {"key_fire",&key_fire, KEY_RCTRL},
+    {"key_use",&key_use, 'e'},
+#else
     {"key_right",&key_right, KEY_RIGHTARROW},
     {"key_left",&key_left, KEY_LEFTARROW},
     {"key_up",&key_up, KEY_UPARROW},
@@ -249,6 +261,7 @@ default_t	defaults[] =
 
     {"key_fire",&key_fire, KEY_RCTRL},
     {"key_use",&key_use, ' '},
+#endif
     {"key_strafe",&key_strafe, KEY_RALT},
     {"key_speed",&key_speed, KEY_RSHIFT},
 

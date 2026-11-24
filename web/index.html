@@ -20,6 +20,8 @@
   const status = document.getElementById('status');
   var Module = {
     canvas: document.getElementById('canvas'),
+    // doom.data/doom.wasm sit in build/, but the page lives one level up
+    locateFile: (p) => 'build/' + p,
     print: (t) => console.log(t),
     printErr: (t) => console.warn(t),
     setStatus: (t) => { if (t) status.textContent = t; },

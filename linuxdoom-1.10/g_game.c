@@ -305,12 +305,20 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	    cmd->angleturn += angleturn[tspeed]; 
     } 
  
+#ifdef __EMSCRIPTEN__
+    if (gamekeydown[key_up] || gamekeydown[KEY_UPARROW])
+#else
     if (gamekeydown[key_up]) 
+#endif
     {
 	// fprintf(stderr, "up\n");
 	forward += forwardmove[speed]; 
     }
+#ifdef __EMSCRIPTEN__
+    if (gamekeydown[key_down] || gamekeydown[KEY_DOWNARROW])
+#else
     if (gamekeydown[key_down]) 
+#endif
     {
 	// fprintf(stderr, "down\n");
 	forward -= forwardmove[speed]; 
@@ -331,7 +339,11 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	|| joybuttons[joybfire]) 
 	cmd->buttons |= BT_ATTACK; 
  
-    if (gamekeydown[key_use] || joybuttons[joybuse] ) 
+#ifdef __EMSCRIPTEN__
+    if (gamekeydown[key_use] || gamekeydown[' '] || joybuttons[joybuse] )
+#else
+    if (gamekeydown[key_use] || joybuttons[joybuse] )
+#endif 
     { 
 	cmd->buttons |= BT_USE;
 	// clear double clicks if hit use button 
@@ -1586,12 +1598,14 @@ void G_DoPlayDemo (void)
 	 
     gameaction = ga_nothing; 
     demobuffer = demo_p = W_CacheLumpName (defdemoname, PU_STATIC); 
-    if ( *demo_p++ != VERSION)
+    // doom1.wad ships v1.9 demos (version 109); the header layout is the same as 110.
+    if ( *demo_p != VERSION && *demo_p != 109)
     {
       fprintf( stderr, "Demo is from a different game version!\n");
       gameaction = ga_nothing;
       return;
     }
+    demo_p++;
     
     skill = *demo_p++; 
     episode = *demo_p++; 
