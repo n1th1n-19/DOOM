@@ -36,6 +36,7 @@ $(BUILD)/doomtest.js: $(TESTOBJS)
 # Static site for hosting (Vercel etc.): make -f Makefile.web dist
 # then: cd dist && vercel deploy --prod
 dist: all
+	./stamp.sh
 	rm -rf dist
 	mkdir -p dist/build
 	cp index.html dist/

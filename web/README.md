@@ -73,6 +73,8 @@ make -f Makefile.web dist
 cd dist && npx vercel deploy --prod
 ```
 
+`make dist` also stamps a content hash into `index.html` (`const BUILD`) and every `build/` URL carries it (`doom.js?v=<hash>`), so browsers fetch the new game as soon as it changes instead of running a cached one. The build id is the first thing in the Debug log.
+
 After changing any C or page source, rebuild and commit the result:
 
 ```bash

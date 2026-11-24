@@ -100,6 +100,8 @@
 <script>
   const $ = (id) => document.getElementById(id);
   const canvas = $('canvas'), status = $('status');
+  // Build id, stamped by `make dist`: part of every build/ URL so browsers never run a stale game.
+  const BUILD = '6144e8df';
 
   // Render size: ?h=720 (default) and ?w= (default: the window's aspect, 4:3 .. 8:3).
   const q = new URLSearchParams(location.search);
@@ -171,6 +173,7 @@
     try { const c = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'); gl = c ? 'ok' : 'unavailable'; } catch (e) { gl = 'error'; }
     return ['DOOM web debug log',
       'page: ' + location.href,
+      'build: ' + BUILD,
       'agent: ' + navigator.userAgent + (navigator.brave ? ' (Brave)' : ''),
       'window: ' + innerWidth + 'x' + innerHeight + ' dpr ' + devicePixelRatio + ', render ' + W + 'x' + H,
       'webgl: ' + gl + ', indexedDB: ' + (typeof indexedDB) + ', touch: ' + matchMedia('(pointer: coarse)').matches,
@@ -194,6 +197,7 @@
     $('debugcopy').textContent = ok ? 'Copied ✓' : 'Copy failed';
     setTimeout(() => { $('debugcopy').textContent = 'Copy'; }, 1500);
   };
+  pageLog('PAGE build ' + BUILD);
   if (q.has('debug')) showDebug(true);
 
   // page-level view of the keyboard, to compare with what the game receives
@@ -241,7 +245,7 @@
                 '-keylog', '-uselog',
                 ...(q.has('debug') ? ['-framelog'] : [])],
     canvas: canvas,
-    locateFile: (p) => 'build/' + p,   // doom.data/doom.wasm sit in build/
+    locateFile: (p) => 'build/' + p + '?v=' + BUILD,   // doom.wasm sits in build/
     print: (t) => { console.log(t); pageLog(t); },
     printErr: (t) => { console.warn(t); pageLog(t); },
     setStatus: (t) => { if (t) status.textContent = t; },
@@ -308,7 +312,7 @@
     status.textContent = 'Starting…';
     start.hidden = true; $('bar').hidden = false;
     const s = document.createElement('script');
-    s.src = 'build/doom.js';
+    s.src = 'build/doom.js?v=' + BUILD;
     document.body.appendChild(s);
     canvas.focus();
   };
