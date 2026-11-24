@@ -1,7 +1,7 @@
 # Browser build. Usage: source ~/emsdk/emsdk_env.sh && make -f Makefile.web
 SRC := ../linuxdoom-1.10
-SKIP := $(SRC)/i_video.c $(SRC)/i_sound.c $(SRC)/i_net.c
-CSRC := $(filter-out $(SKIP),$(wildcard $(SRC)/*.c)) i_video_sdl.c i_sound_stub.c i_net_stub.c web_glue.c
+SKIP := $(SRC)/i_video.c $(SRC)/i_net.c
+CSRC := $(filter-out $(SKIP),$(wildcard $(SRC)/*.c)) i_video_sdl.c i_net_stub.c web_glue.c
 BUILD := build
 
 # -std=gnu89: the 1997 code is K&R-era C; no -DLINUX (it pulls in <values.h>/X11 defaults)

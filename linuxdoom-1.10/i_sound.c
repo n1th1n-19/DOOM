@@ -34,20 +34,31 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include <sys/types.h>
 
 #ifndef LINUX
+#ifndef __EMSCRIPTEN__
 #include <sys/filio.h>
+#endif
 #endif
 
 #include <fcntl.h>
 #include <unistd.h>
+#ifndef __EMSCRIPTEN__
 #include <sys/ioctl.h>
+#endif
 
 // Linux voxware output.
+#ifndef __EMSCRIPTEN__
 #include <linux/soundcard.h>
+#endif
 
 // Timer stuff. Experimental.
 #include <time.h>
+#ifndef __EMSCRIPTEN__
 #include <signal.h>
+#endif
 
+#ifdef __EMSCRIPTEN__
+#include <SDL.h>
+#endif
 #include "z_zone.h"
 
 #include "i_system.h"
@@ -104,6 +115,12 @@ int 		lengths[NUMSFX];
 
 // The actual output device.
 int	audio_fd;
+#ifdef __EMSCRIPTEN__
+static SDL_AudioDeviceID	audio_dev;
+// Keep this many mixed buffers queued ahead of the audio device.
+// shortcut: fixed ~93 ms latency, lower it if sfx feel late.
+#define QUEUE_AHEAD		2
+#endif
 
 // The global mixing buffer.
 // Basically, samples from all active internal channels
@@ -156,6 +173,7 @@ int*		channelrightvol_lookup[NUM_CHANNELS];
 //
 // Safe ioctl, convenience.
 //
+#ifndef __EMSCRIPTEN__
 void
 myioctl
 ( int	fd,
@@ -173,6 +191,7 @@ myioctl
 	exit(-1);
     }
 }
+#endif
 
 
 
@@ -536,7 +555,11 @@ int I_SoundIsPlaying(int handle)
 //
 // This function currently supports only 16bit.
 //
+#ifdef __EMSCRIPTEN__
+static void I_MixSound( void )
+#else
 void I_UpdateSound( void )
+#endif
 {
 #ifdef SNDINTR
   // Debug. Count buffer misses with interrupt.
@@ -662,12 +685,29 @@ void I_UpdateSound( void )
 // Mixing now done synchronous, and
 //  only output be done asynchronous?
 //
+#ifdef __EMSCRIPTEN__
+// The original blocks in write() to /dev/dsp, which paces the game loop.
+// The browser loop runs at display rate, so top the queue up instead.
+void I_UpdateSound( void )
+{
+    if (!audio_dev)
+	return;
+    while (SDL_GetQueuedAudioSize(audio_dev) < QUEUE_AHEAD*SAMPLECOUNT*BUFMUL)
+    {
+	I_MixSound();
+	SDL_QueueAudio(audio_dev, mixbuffer, SAMPLECOUNT*BUFMUL);
+    }
+}
+
+void I_SubmitSound(void) { }
+#else
 void
 I_SubmitSound(void)
 {
   // Write it to DSP device.
   write(audio_fd, mixbuffer, SAMPLECOUNT*BUFMUL);
 }
+#endif
 
 
 
@@ -722,7 +762,13 @@ void I_ShutdownSound(void)
 #endif
   
   // Cleaning up -releasing the DSP device.
+#ifdef __EMSCRIPTEN__
+  if (audio_dev)
+    SDL_CloseAudioDevice(audio_dev);
+  audio_dev = 0;
+#else
   close ( audio_fd );
+#endif
 #endif
 
   // Done.
@@ -767,6 +813,24 @@ I_InitSound()
   // Secure and configure sound device first.
   fprintf( stderr, "I_InitSound: ");
   
+#ifdef __EMSCRIPTEN__
+  {
+    SDL_AudioSpec want, have;
+
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+      fprintf(stderr, "SDL audio init failed: %s\n", SDL_GetError());
+    SDL_zero(want);
+    want.freq = SAMPLERATE;
+    want.format = AUDIO_S16SYS;
+    want.channels = 2;
+    want.samples = SAMPLECOUNT;
+    audio_dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    if (!audio_dev)
+      fprintf(stderr, "Could not open audio: %s\n", SDL_GetError());
+    else
+      SDL_PauseAudioDevice(audio_dev, 0);
+  }
+#else
   audio_fd = open("/dev/dsp", O_WRONLY);
   if (audio_fd<0)
     fprintf(stderr, "Could not open /dev/dsp\n");
@@ -789,6 +853,7 @@ I_InitSound()
     myioctl(audio_fd, SNDCTL_DSP_SETFMT, &i);
   else
     fprintf(stderr, "Could not play signed 16 data\n");
+#endif
 
   fprintf(stderr, " configured audio device\n" );
 
@@ -808,7 +873,7 @@ I_InitSound()
     {
       // Previously loaded already?
       S_sfx[i].data = S_sfx[i].link->data;
-      lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
+      lengths[i] = lengths[S_sfx[i].link - S_sfx];  // pointer diff is already in elements
     }
   }
 
@@ -892,6 +957,7 @@ int I_QrySongPlaying(int handle)
 
 //
 // Experimental stuff.
+#ifndef __EMSCRIPTEN__
 // A Linux timer interrupt, for asynchronous
 //  sound output.
 // I ripped this out of the Timer class in
@@ -983,3 +1049,4 @@ void I_SoundDelTimer()
   if ( I_SoundSetTimer( 0 ) == -1)
     fprintf( stderr, "I_SoundDelTimer: failed to remove interrupt. Doh!\n");
 }
+#endif // !__EMSCRIPTEN__ (SNDINTR timer code)
