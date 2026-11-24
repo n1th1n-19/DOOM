@@ -19,8 +19,23 @@ static Uint32        palette32[256];
 static Uint32        pixels32[MAXWIDTH*MAXHEIGHT];
 static int           mouse_buttons;
 
-static int TranslateKey (SDL_Keycode k)
+static int TranslateKey (SDL_Keycode k, SDL_Scancode sc)
 {
+    // Browsers may report Shift/CapsLock letters as capitals (and some layouts
+    //  as non-ASCII). DOOM wants lowercase, as the original Linux code folded.
+    if (k >= 'A' && k <= 'Z')
+	k += 'a' - 'A';
+    // unusable keycode: fall back to the physical key for letters and digits
+    if (k <= 0 || k >= 127)
+    {
+	if (sc >= SDL_SCANCODE_A && sc <= SDL_SCANCODE_Z)
+	    k = 'a' + (sc - SDL_SCANCODE_A);
+	else if (sc >= SDL_SCANCODE_1 && sc <= SDL_SCANCODE_9)
+	    k = '1' + (sc - SDL_SCANCODE_1);
+	else if (sc == SDL_SCANCODE_0)
+	    k = '0';
+    }
+
     switch (k)
     {
       case SDLK_LEFT:       return KEY_LEFTARROW;
@@ -57,12 +72,12 @@ static int TranslateKey (SDL_Keycode k)
     return 0;                              // unmapped: ignore
 }
 
-static void PostKey (evtype_t type, SDL_Keycode sym)
+static void PostKey (evtype_t type, SDL_Keycode sym, SDL_Scancode sc)
 {
     event_t event;
-    int key = TranslateKey (sym);
-    if (M_CheckParm ("-framelog"))
-	printf ("key %s sym %d -> doom key %d\n", type == ev_keydown ? "down" : "up", (int)sym, key);
+    int key = TranslateKey (sym, sc);
+    if (M_CheckParm ("-keylog"))
+	printf ("key %s sym %d scancode %d -> doom key %d\n", type == ev_keydown ? "down" : "up", (int)sym, (int)sc, key);
     if (!key)
 	return;
     event.type = type;
@@ -94,10 +109,10 @@ void I_StartTic (void)
 	{
 	  case SDL_KEYDOWN:
 	    if (!e.key.repeat)
-		PostKey (ev_keydown, e.key.keysym.sym);
+		PostKey (ev_keydown, e.key.keysym.sym, e.key.keysym.scancode);
 	    break;
 	  case SDL_KEYUP:
-	    PostKey (ev_keyup, e.key.keysym.sym);
+	    PostKey (ev_keyup, e.key.keysym.sym, e.key.keysym.scancode);
 	    break;
 	  case SDL_MOUSEBUTTONDOWN:
 	  case SDL_MOUSEBUTTONUP:

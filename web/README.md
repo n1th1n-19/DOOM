@@ -109,10 +109,19 @@ Add these to the URL, for example `index.html?h=1080&debug`.
 | --- | --- |
 | `h=<rows>` | Render height, 240–1200 (default 720). |
 | `w=<cols>` | Render width, up to 1920 (default: the window's aspect, between 4:3 and 8:3). |
-| `debug` | Shows the game's console output on the page: every 100th frame, every key press and every use-key press with the player's position. |
+| `debug` | Opens the debug log overlay on load, with an extra line every 100 frames. |
 | `autostart` | Skips the start screen. |
 | `ep=<1-4>` `map=<1-9>` `skill=<1-5>` | Episode, map and difficulty to start in (default `1`, `1`, `3`). Skill 4 is Ultra-Violence, 5 is Nightmare. |
 | `menu` | Opens the title screen and attract demos instead of going straight into E1M1. |
+
+## Debug log
+
+The **Debug** button under the game opens an overlay with everything the game
+prints, plus what the page itself sees: every key press (`PAGE keydown …`), the key
+the game received (`key down sym … -> doom key …`), every use-key press, focus and
+pointer-lock changes, and errors. **Copy** puts the log and your browser details on
+the clipboard; **Clear** empties it. If a control does not work, copy the log right
+after pressing the key and send it along.
 
 ## Options → Gameplay
 

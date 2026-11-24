@@ -29,6 +29,10 @@
   #games span { color: var(--dim); }
   #start .card.busy button { opacity: .5; pointer-events: none; }
   #start .keys { color: var(--dim); font-size: 12px; margin-top: 14px; text-align: left; }
+  #debug { position: fixed; right: 8px; bottom: 8px; width: min(720px, calc(100vw - 16px)); max-height: 55vh; display: flex; flex-direction: column; z-index: 8; background: #000d; border: 1px solid #555; border-radius: 8px; font: 12px/1.35 ui-monospace, monospace; }
+  #debug .head { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #444; }
+  #debug .head button { background: #222; color: var(--fg); border: 1px solid #555; border-radius: 6px; padding: 2px 10px; font: inherit; cursor: pointer; }
+  #debugtext { margin: 0; padding: 8px; overflow: auto; white-space: pre-wrap; word-break: break-all; color: #9f9; flex: 1; min-height: 120px; user-select: text; }
   #touch { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: none; }
   #touch.on { display: block; }
   #touch button { pointer-events: auto; position: absolute; width: 56px; height: 56px; border-radius: 50%; border: 2px solid #fff6; background: #0007; color: #fff; font: 600 13px system-ui; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -42,8 +46,21 @@
   <button id="smooth" title="Smooth or pixelated scaling">Smooth: off</button>
   <button id="full">Fullscreen</button>
   <button id="touchbtn" title="On-screen touch controls">Touch controls</button>
+  <button id="debugbtn" title="Show the debug log">Debug</button>
 </div>
 <div id="status">Loading…</div>
+
+<div id="debug" hidden>
+  <div class="head">
+    <b>Debug log</b>
+    <span>
+      <button id="debugcopy">Copy</button>
+      <button id="debugclear">Clear</button>
+      <button id="debugclose">Close</button>
+    </span>
+  </div>
+  <pre id="debugtext"></pre>
+</div>
 
 <div id="start">
   <div class="card">
@@ -131,13 +148,69 @@
     for (const f of e.dataTransfer.files) await addFile(f);
   });
 
-  // ?debug shows the game's console output on the page (for testing)
-  const logEl = document.createElement('pre');
-  logEl.style.cssText = 'position:fixed;left:8px;top:8px;margin:0;font:11px monospace;color:#9f9;background:#000a;max-width:60vw;white-space:pre-wrap;z-index:9';
-  const lines = [];
-  function pageLog(t) { if (!q.has('debug')) return; lines.push(t); if (lines.length > 30) lines.shift(); logEl.textContent = lines.join('\n'); if (!logEl.parentNode) document.body.appendChild(logEl); }
+  // ---- debug overlay -----------------------------------------------------
+  // Everything the game prints, plus page-level key/focus/pointer events, goes into a
+  // buffer. The Debug button (or ?debug) opens it; Copy puts it all on the clipboard.
+  const logLines = [];
+  const t0 = performance.now();
+  const debugPanel = $('debug'), debugText = $('debugtext');
+  function pageLog(t) {
+    const stamp = ((performance.now() - t0) / 1000).toFixed(1).padStart(6);
+    logLines.push(stamp + 's  ' + t);
+    if (logLines.length > 3000) logLines.shift();
+    if (!debugPanel.hidden) renderLog();
+  }
+  function renderLog() {
+    const atEnd = debugText.scrollTop + debugText.clientHeight >= debugText.scrollHeight - 8;
+    debugText.textContent = logLines.join('\n');
+    if (atEnd) debugText.scrollTop = debugText.scrollHeight;
+  }
+  function envInfo() {
+    let gl = 'none';
+    try { const c = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'); gl = c ? 'ok' : 'unavailable'; } catch (e) { gl = 'error'; }
+    return ['DOOM web debug log',
+      'page: ' + location.href,
+      'agent: ' + navigator.userAgent + (navigator.brave ? ' (Brave)' : ''),
+      'window: ' + innerWidth + 'x' + innerHeight + ' dpr ' + devicePixelRatio + ', render ' + W + 'x' + H,
+      'webgl: ' + gl + ', indexedDB: ' + (typeof indexedDB) + ', touch: ' + matchMedia('(pointer: coarse)').matches,
+      'time: ' + new Date().toISOString(), '---'].join('\n');
+  }
+  function showDebug(on) {
+    debugPanel.hidden = !on;
+    if (on) { renderLog(); debugText.scrollTop = debugText.scrollHeight; }
+  }
+  $('debugbtn').onclick = () => showDebug(debugPanel.hidden);
+  $('debugclose').onclick = () => showDebug(false);
+  $('debugclear').onclick = () => { logLines.length = 0; renderLog(); };
+  $('debugcopy').onclick = async () => {
+    const text = envInfo() + '\n' + logLines.join('\n');
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      const ta = document.createElement('textarea');   // fallback for blocked clipboard API
+      ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove();
+    }
+    $('debugcopy').textContent = ok ? 'Copied ✓' : 'Copy failed';
+    setTimeout(() => { $('debugcopy').textContent = 'Copy'; }, 1500);
+  };
+  if (q.has('debug')) showDebug(true);
 
-  addEventListener('error', (e) => pageLog('ERR ' + e.message));
+  // page-level view of the keyboard, to compare with what the game receives
+  let lastKey = '';
+  for (const type of ['keydown', 'keyup']) {
+    addEventListener(type, (e) => {
+      const line = type + ' key=' + JSON.stringify(e.key) + ' code=' + e.code + (e.repeat ? ' repeat' : '') +
+        ' target=' + (e.target.id || e.target.tagName) + ' active=' + ((document.activeElement && (document.activeElement.id || document.activeElement.tagName)) || 'none');
+      if (line !== lastKey) pageLog('PAGE ' + line);   // skip key-repeat spam
+      lastKey = line;
+    }, true);
+  }
+  addEventListener('focus', () => pageLog('PAGE window focus'));
+  addEventListener('blur', () => pageLog('PAGE window blur'));
+  document.addEventListener('pointerlockchange', () => pageLog('PAGE pointer lock ' + (document.pointerLockElement ? 'on' : 'off')));
+  document.addEventListener('pointerlockerror', () => pageLog('PAGE pointer lock error'));
+
+  addEventListener('error', (e) => pageLog('ERROR ' + e.message + ' ' + (e.filename || '') + ':' + (e.lineno || '')));
   addEventListener('unhandledrejection', (e) => pageLog('REJECT ' + (e.reason && e.reason.stack || e.reason)));
 
   // ---- game --------------------------------------------------------------
@@ -147,7 +220,8 @@
     arguments: ['-width', String(W), '-height', String(H),
                 ...(q.has('menu') ? [] : ['-warp', q.get('ep') || '1', q.get('map') || '1',
                                           '-skill', q.get('skill') || '3']),
-                ...(q.has('debug') ? ['-framelog', '-uselog'] : [])],
+                '-keylog', '-uselog',
+                ...(q.has('debug') ? ['-framelog'] : [])],
     canvas: canvas,
     locateFile: (p) => 'build/' + p,   // doom.data/doom.wasm sit in build/
     print: (t) => { console.log(t); pageLog(t); },
