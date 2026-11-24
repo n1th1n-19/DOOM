@@ -8,7 +8,7 @@
   :root { color-scheme: dark; }
   html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box; }
-  canvas { width: min(100%, calc((100vh - 80px) * 4 / 3)); aspect-ratio: 4 / 3; background: #111; image-rendering: pixelated; outline: none; }
+  canvas { background: #111; image-rendering: pixelated; outline: none; }
   #status { min-height: 1.4em; text-align: center; }
   #status.error { color: #ff6b6b; }
 </style>
@@ -18,8 +18,23 @@
 <div id="status">Loading…</div>
 <script>
   const status = document.getElementById('status');
+  const canvas = document.getElementById('canvas');
+
+  // Render size: ?h=720 (default) and ?w= (default: the window's aspect, 4:3 .. 8:3).
+  const q = new URLSearchParams(location.search);
+  const H = Math.max(240, Math.min(1200, +q.get('h') || 720));
+  const aspect = Math.min(8 / 3, Math.max(4 / 3, innerWidth / Math.max(1, innerHeight - 60)));
+  const W = Math.min(1920, (+q.get('w') || Math.round(H * aspect)) & ~1);
+  function fit() {
+    const k = Math.min(innerWidth / W, (innerHeight - 60) / H);
+    canvas.style.width = Math.floor(W * k) + 'px';
+    canvas.style.height = Math.floor(H * k) + 'px';
+  }
+  fit(); addEventListener('resize', fit);
+
   var Module = {
-    canvas: document.getElementById('canvas'),
+    arguments: ['-width', String(W), '-height', String(H)],
+    canvas: canvas,
     // doom.data/doom.wasm sit in build/, but the page lives one level up
     locateFile: (p) => 'build/' + p,
     print: (t) => console.log(t),

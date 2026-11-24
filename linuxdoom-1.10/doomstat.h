@@ -145,6 +145,17 @@ extern	int		viewheight;
 extern	int		viewwidth;
 extern	int		scaledviewwidth;
 
+// Window and 3D render buffer size (see r_main.c R_InitRenderSize).
+extern	int		winwidth;
+extern	int		winheight;
+extern	int		renderwidth;
+extern	int		renderheight;
+extern	byte		renderbuf[];
+// Palette index in the 320x200 UI buffer that means "show the 3D view here".
+#define UI_KEY		255
+extern	int		render3d;	// 3D view drawn this frame?
+extern	int		uifullscreen;	// no status bar (screen size 11)
+
 
 
 

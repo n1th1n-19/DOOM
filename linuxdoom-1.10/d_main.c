@@ -243,12 +243,12 @@ void D_Display (void)
 	    break;
 	if (automapactive)
 	    AM_Drawer ();
-	if (wipe || (viewheight != 200 && fullscreen) )
+	if (wipe || (!uifullscreen && fullscreen) )
 	    redrawsbar = true;
 	if (inhelpscreensstate && !inhelpscreens)
 	    redrawsbar = true;              // just put away the help screen
-	ST_Drawer (viewheight == 200, redrawsbar );
-	fullscreen = viewheight == 200;
+	ST_Drawer (uifullscreen, redrawsbar );
+	fullscreen = uifullscreen;
 	break;
 
       case GS_INTERMISSION:
@@ -269,7 +269,17 @@ void D_Display (void)
     
     // draw the view directly
     if (gamestate == GS_LEVEL && !automapactive && gametic)
+    {
+	// The world goes to the hi-res renderbuf. In the 320x200 UI buffer the
+	//  3D rows become UI_KEY (see video layer compose): HUD, menu and
+	//  pause graphics drawn after this show on top of the 3D view.
+	memset (screens[0], UI_KEY,
+		SCREENWIDTH*(uifullscreen ? SCREENHEIGHT : SCREENHEIGHT-32));
 	R_RenderPlayerView (&players[displayplayer]);
+	render3d = 1;
+    }
+    else
+	render3d = 0;
 
     if (gamestate == GS_LEVEL && gametic)
 	HU_Drawer ();

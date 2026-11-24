@@ -49,14 +49,14 @@ planefunction_t		ceilingfunc;
 //
 
 // Here comes the obnoxious "visplane".
-#define MAXVISPLANES	128
+#define MAXVISPLANES	512
 visplane_t		visplanes[MAXVISPLANES];
 visplane_t*		lastvisplane;
 visplane_t*		floorplane;
 visplane_t*		ceilingplane;
 
 // ?
-#define MAXOPENINGS	SCREENWIDTH*64
+#define MAXOPENINGS	(MAXWIDTH*64)
 short			openings[MAXOPENINGS];
 short*			lastopening;
 
@@ -66,15 +66,15 @@ short*			lastopening;
 //  floorclip starts out SCREENHEIGHT
 //  ceilingclip starts out -1
 //
-short			floorclip[SCREENWIDTH];
-short			ceilingclip[SCREENWIDTH];
+short			floorclip[MAXWIDTH];
+short			ceilingclip[MAXWIDTH];
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-int			spanstart[SCREENHEIGHT];
-int			spanstop[SCREENHEIGHT];
+int			spanstart[MAXHEIGHT];
+int			spanstop[MAXHEIGHT];
 
 //
 // texture mapping
@@ -82,15 +82,15 @@ int			spanstop[SCREENHEIGHT];
 lighttable_t**		planezlight;
 fixed_t			planeheight;
 
-fixed_t			yslope[SCREENHEIGHT];
-fixed_t			distscale[SCREENWIDTH];
+fixed_t			yslope[MAXHEIGHT];
+fixed_t			distscale[MAXWIDTH];
 fixed_t			basexscale;
 fixed_t			baseyscale;
 
-fixed_t			cachedheight[SCREENHEIGHT];
-fixed_t			cacheddistance[SCREENHEIGHT];
-fixed_t			cachedxstep[SCREENHEIGHT];
-fixed_t			cachedystep[SCREENHEIGHT];
+fixed_t			cachedheight[MAXHEIGHT];
+fixed_t			cacheddistance[MAXHEIGHT];
+fixed_t			cachedxstep[MAXHEIGHT];
+fixed_t			cachedystep[MAXHEIGHT];
 
 
 
@@ -204,8 +204,9 @@ void R_ClearPlanes (void)
     angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
 	
     // scale will be unit scale at SCREENWIDTH/2 distance
-    basexscale = FixedDiv (finecosine[angle],centerxfrac);
-    baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+    // (one pixel is 1/projection of the 90-degree view, not 1/centerx)
+    basexscale = FixedDiv (finecosine[angle],projection);
+    baseyscale = -FixedDiv (finesine[angle],projection);
 }
 
 
@@ -250,10 +251,10 @@ R_FindPlane
     check->height = height;
     check->picnum = picnum;
     check->lightlevel = lightlevel;
-    check->minx = SCREENWIDTH;
+    check->minx = viewwidth;
     check->maxx = -1;
     
-    memset (check->top,0xff,sizeof(check->top));
+    memset (check->top,0xff,sizeof(check->top));  // 0xffff per entry
 		
     return check;
 }
@@ -297,7 +298,7 @@ R_CheckPlane
     }
 
     for (x=intrl ; x<= intrh ; x++)
-	if (pl->top[x] != 0xff)
+	if (pl->top[x] != 0xffff)
 	    break;
 
     if (x > intrh)
@@ -318,7 +319,7 @@ R_CheckPlane
     pl->minx = start;
     pl->maxx = stop;
 
-    memset (pl->top,0xff,sizeof(pl->top));
+    memset (pl->top,0xff,sizeof(pl->top));  // 0xffff per entry
 		
     return pl;
 }
@@ -435,8 +436,8 @@ void R_DrawPlanes (void)
 
 	planezlight = zlight[light];
 
-	pl->top[pl->maxx+1] = 0xff;
-	pl->top[pl->minx-1] = 0xff;
+	pl->top[pl->maxx+1] = 0xffff;
+	pl->top[pl->minx-1] = 0xffff;
 		
 	stop = pl->maxx + 1;
 

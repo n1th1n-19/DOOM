@@ -78,8 +78,8 @@ lighttable_t**	spritelights;
 
 // constant arrays
 //  used for psprite clipping and initializing clipping
-short		negonearray[SCREENWIDTH];
-short		screenheightarray[SCREENWIDTH];
+short		negonearray[MAXWIDTH];
+short		screenheightarray[MAXWIDTH];
 
 
 //
@@ -300,7 +300,7 @@ void R_InitSprites (char** namelist)
 {
     int		i;
 	
-    for (i=0 ; i<SCREENWIDTH ; i++)
+    for (i=0 ; i<MAXWIDTH ; i++)
     {
 	negonearray[i] = -1;
     }
@@ -693,6 +693,8 @@ void R_DrawPSprite (pspdef_t* psp)
     vis = &avis;
     vis->mobjflags = 0;
     vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
+    // weapon art assumes the original (uiviewheight rows) view; keep it at the bottom
+    vis->texturemid -= weaponyshift;
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;	
     vis->scale = pspritescale<<detailshift;
@@ -842,8 +844,8 @@ void R_SortVisSprites (void)
 void R_DrawSprite (vissprite_t* spr)
 {
     drawseg_t*		ds;
-    short		clipbot[SCREENWIDTH];
-    short		cliptop[SCREENWIDTH];
+    short		clipbot[MAXWIDTH];
+    short		cliptop[MAXWIDTH];
     int			x;
     int			r1;
     int			r2;

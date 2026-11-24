@@ -52,7 +52,7 @@
 #define SIL_TOP			2
 #define SIL_BOTH		3
 
-#define MAXDRAWSEGS		256
+#define MAXDRAWSEGS		1024
 
 
 
@@ -467,15 +467,14 @@ typedef struct
   
   // leave pads for [minx-1]/[maxx+1]
   
-  byte		pad1;
-  // Here lies the rub for all
-  //  dynamic resize/change of resolution.
-  byte		top[SCREENWIDTH];
-  byte		pad2;
-  byte		pad3;
-  // See above.
-  byte		bottom[SCREENWIDTH];
-  byte		pad4;
+  // 16-bit rows: the 8-bit original capped the view at 255 rows.
+  // 0xffff marks "no row" (was 0xff).
+  unsigned short	pad1;
+  unsigned short	top[MAXWIDTH];
+  unsigned short	pad2;
+  unsigned short	pad3;
+  unsigned short	bottom[MAXWIDTH];
+  unsigned short	pad4;
 
 } visplane_t;
 

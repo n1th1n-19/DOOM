@@ -9,16 +9,13 @@
 #include "d_main.h"
 #include "d_event.h"
 #include "doomdef.h"
-
-// Window is 4:3 on purpose: DOOM's 320x200 pixels were non-square (1.2x tall).
-#define WIN_W 960
-#define WIN_H 720
+#include "compose.h"
 
 static SDL_Window*   window;
 static SDL_Renderer* renderer;
 static SDL_Texture*  texture;
 static Uint32        palette32[256];
-static Uint32        pixels32[SCREENWIDTH*SCREENHEIGHT];
+static Uint32        pixels32[MAXWIDTH*MAXHEIGHT];
 static int           mouse_buttons;
 
 static int TranslateKey (SDL_Keycode k)
@@ -137,13 +134,9 @@ void I_UpdateNoBlit (void) { }
 
 void I_FinishUpdate (void)
 {
-    int i;
-    byte* src = screens[0];
+    Compose (pixels32, palette32);
 
-    for (i = 0; i < SCREENWIDTH*SCREENHEIGHT; i++)
-	pixels32[i] = palette32[src[i]];
-
-    SDL_UpdateTexture (texture, NULL, pixels32, SCREENWIDTH*sizeof(Uint32));
+    SDL_UpdateTexture (texture, NULL, pixels32, winwidth*sizeof(Uint32));
     SDL_RenderClear (renderer);
     SDL_RenderCopy (renderer, texture, NULL, NULL);
     SDL_RenderPresent (renderer);
@@ -178,7 +171,7 @@ void I_InitGraphics (void)
 
     SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "0");
     window = SDL_CreateWindow ("DOOM", SDL_WINDOWPOS_CENTERED,
-			       SDL_WINDOWPOS_CENTERED, WIN_W, WIN_H, 0);
+			       SDL_WINDOWPOS_CENTERED, winwidth, winheight, 0);
     if (!window)
 	I_Error ("SDL_CreateWindow failed: %s", SDL_GetError ());
     renderer = SDL_CreateRenderer (window, -1, 0);
@@ -186,7 +179,7 @@ void I_InitGraphics (void)
 	I_Error ("SDL_CreateRenderer failed: %s", SDL_GetError ());
     texture = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_ARGB8888,
 				 SDL_TEXTUREACCESS_STREAMING,
-				 SCREENWIDTH, SCREENHEIGHT);
+				 winwidth, winheight);
     if (!texture)
 	I_Error ("SDL_CreateTexture failed: %s", SDL_GetError ());
 }

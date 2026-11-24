@@ -33,6 +33,8 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 
 #include "doomdef.h"
+#include "m_argv.h"
+#include "doomstat.h"
 #include "d_net.h"
 
 #include "m_bbox.h"
@@ -100,7 +102,12 @@ int			viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t			xtoviewangle[SCREENWIDTH+1];
+angle_t			xtoviewangle[MAXWIDTH+1];
+
+// Weapon sprite drop so it stays at the bottom of the hi-res view.
+fixed_t			weaponyshift;
+// Largest wall scale (the original clamps at 64.0 for a 320 wide view).
+static fixed_t		maxwallscale = 64*FRACUNIT;
 
 
 // UNUSED.
@@ -490,13 +497,13 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
     {
 	scale = FixedDiv (num, den);
 
-	if (scale > 64*FRACUNIT)
-	    scale = 64*FRACUNIT;
+	if (scale > maxwallscale)
+	    scale = maxwallscale;
 	else if (scale < 256)
 	    scale = 256;
     }
     else
-	scale = 64*FRACUNIT;
+	scale = maxwallscale;
 	
     return scale;
 }
@@ -554,8 +561,9 @@ void R_InitTextureMapping (void)
     //
     // Calc focallength
     //  so FIELDOFVIEW angles covers SCREENWIDTH.
-    focallength = FixedDiv (centerxfrac,
-			    finetangent[FINEANGLES/4+FIELDOFVIEW/2] );
+    // The view is 4:3 at 90 degrees for the window height; wider windows get
+    //  more horizontal FOV (Hor+), so focallength is just the projection.
+    focallength = projection;
 	
     for (i=0 ; i<FINEANGLES/2 ; i++)
     {
@@ -679,25 +687,25 @@ void R_ExecuteSetViewSize (void)
 
     setsizeneeded = false;
 
-    if (setblocks == 11)
-    {
-	scaledviewwidth = SCREENWIDTH;
-	viewheight = SCREENHEIGHT;
-    }
-    else
-    {
-	scaledviewwidth = setblocks*32;
-	viewheight = (setblocks*168/10)&~7;
-    }
-    
-    detailshift = setdetail;
-    viewwidth = scaledviewwidth>>detailshift;
+    // Hi-res view: always full window width. With the status bar the 3D
+    //  area is the top 168/200 of the window, the bar is drawn from the
+    //  320x200 UI buffer below it. Screen size 11 hides the bar.
+    uifullscreen = (setblocks == 11);
+    scaledviewwidth = SCREENWIDTH;		// UI space: no border is ever drawn
+    renderwidth = winwidth;
+    renderheight = uifullscreen ? winheight : (winheight*168/200)&~1;
+    viewwidth = renderwidth;
+    viewheight = renderheight;
+
+    detailshift = 0;				// low detail is gone
 	
     centery = viewheight/2;
     centerx = viewwidth/2;
     centerxfrac = centerx<<FRACBITS;
     centeryfrac = centery<<FRACBITS;
-    projection = centerxfrac;
+    // 90 degree horizontal FOV on a 4:3 window of this height (square pixels)
+    projection = (winheight*2/3)<<FRACBITS;
+    maxwallscale = FixedDiv (projection, 160*FRACUNIT) * 64;
 
     if (!detailshift)
     {
@@ -719,8 +727,15 @@ void R_ExecuteSetViewSize (void)
     R_InitTextureMapping ();
     
     // psprite scales
-    pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-    pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+    // weapon/sky scale: 1.0 at the original 160 pixel projection
+    pspritescale = FixedDiv (projection, 160*FRACUNIT);
+    pspriteiscale = FixedDiv (160*FRACUNIT, projection);
+    {
+	// original weapon art sits at the bottom of a 168 (or 200) row view
+	int uirows = uifullscreen ? SCREENHEIGHT : 168;
+	weaponyshift = FixedDiv (centeryfrac - uirows/2*pspritescale,
+				 pspritescale);
+    }
     
     // thing clipping
     for (i=0 ; i<viewwidth ; i++)
@@ -731,7 +746,7 @@ void R_ExecuteSetViewSize (void)
     {
 	dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
 	dy = abs(dy);
-	yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+	yslope[i] = FixedDiv (projection, dy);
     }
 	
     for (i=0 ; i<viewwidth ; i++)
@@ -747,7 +762,7 @@ void R_ExecuteSetViewSize (void)
 	startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
 	for (j=0 ; j<MAXLIGHTSCALE ; j++)
 	{
-	    level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+	    level = startmap - j*(SCREENWIDTH/2)/(projection>>FRACBITS)/DISTMAP;
 	    
 	    if (level < 0)
 		level = 0;
@@ -770,8 +785,36 @@ extern int	screenblocks;
 
 
 
+//
+// R_InitRenderSize
+// Window size from -width/-height (default 960x720, a 4:3 window).
+//
+static void R_InitRenderSize (void)
+{
+    int	p;
+
+    p = M_CheckParm ("-width");
+    if (p && p < myargc-1)
+	winwidth = atoi (myargv[p+1]);
+    p = M_CheckParm ("-height");
+    if (p && p < myargc-1)
+	winheight = atoi (myargv[p+1]);
+
+    if (winwidth < 320)		winwidth = 320;
+    if (winheight < 240)	winheight = 240;
+    if (winwidth > MAXWIDTH)	winwidth = MAXWIDTH;
+    if (winheight > MAXHEIGHT)	winheight = MAXHEIGHT;
+    winwidth &= ~1;
+    winheight &= ~1;
+    // finetangent[] only covers +-2.0, so the half FOV is at most 63 degrees:
+    //  that is 8:3 (the 4:3 base view has tan = 0.75, wider scales linearly)
+    if (winwidth > winheight*8/3)
+	winwidth = (winheight*8/3)&~1;
+}
+
 void R_Init (void)
 {
+    R_InitRenderSize ();
     R_InitData ();
     printf ("\nR_InitData");
     R_InitPointToAngle ();

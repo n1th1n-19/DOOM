@@ -112,6 +112,11 @@ typedef enum
 #define SCREENWIDTH  320
 //SCREEN_MUL*BASE_WIDTH //320
 #define SCREENHEIGHT 200
+
+// Hi-res 3D view: the 2D UI stays 320x200 (SCREENWIDTH/HEIGHT); the world is
+// rendered into a separate buffer of up to MAXWIDTH x MAXHEIGHT pixels.
+#define MAXWIDTH		1920
+#define MAXHEIGHT		1200
 //(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
 
 

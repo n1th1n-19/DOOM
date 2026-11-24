@@ -1,7 +1,7 @@
 # Browser build. Usage: source ~/emsdk/emsdk_env.sh && make -f Makefile.web
 SRC := ../linuxdoom-1.10
 SKIP := $(SRC)/i_video.c $(SRC)/i_net.c
-CSRC := $(filter-out $(SKIP),$(wildcard $(SRC)/*.c)) i_video_sdl.c i_net_stub.c web_glue.c
+CSRC := $(filter-out $(SKIP),$(wildcard $(SRC)/*.c)) i_video_sdl.c i_net_stub.c web_glue.c compose.c
 BUILD := build
 
 # -std=gnu89: the 1997 code is K&R-era C; no -DLINUX (it pulls in <values.h>/X11 defaults)
@@ -16,10 +16,20 @@ vpath %.c $(SRC) .
 all: $(BUILD)/doom.js
 $(BUILD)/doom.js: $(OBJS)
 	emcc $(OBJS) -o $@ $(LDFLAGS)
-$(BUILD)/%.o: %.c | $(BUILD)
+# all objects depend on all headers: the structs are shared (visplane_t etc.)
+HDRS := $(wildcard $(SRC)/*.h) $(wildcard *.h)
+$(BUILD)/%.o: %.c $(HDRS) | $(BUILD)
 	emcc $(CFLAGS) -c $< -o $@
 $(BUILD):
 	mkdir -p $(BUILD)
 clean:
 	rm -rf $(BUILD)
-.PHONY: all clean
+
+# Headless node build for tests: make -f Makefile.web test
+# then e.g. DOOM_DUMP=100 DOOM_OUT=/tmp/f.ppm node build/doomtest.js -warp 1 1
+TESTOBJS := $(filter-out $(BUILD)/i_video_sdl.o,$(OBJS)) $(BUILD)/i_video_null.o
+test: $(BUILD)/doomtest.js
+$(BUILD)/doomtest.js: $(TESTOBJS)
+	emcc $(TESTOBJS) -o $@ -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=1048576 \
+		-sENVIRONMENT=node -sNODERAWFS -sEXIT_RUNTIME=1
+.PHONY: all clean test
