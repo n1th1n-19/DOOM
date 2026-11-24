@@ -1616,6 +1616,7 @@ void G_DoPlayDemo (void)
     {
       fprintf( stderr, "Demo is from a different game version!\n");
       gameaction = ga_nothing;
+      D_AdvanceDemo ();		// skip it instead of idling on the demo screen
       return;
     }
     demo_p++;

@@ -183,8 +183,7 @@ boolean P_CheckAmmo (player_t* player)
     do
     {
 	if (player->weaponowned[wp_plasma]
-	    && player->ammo[am_cell]
-	    && (gamemode != shareware) )
+	    && player->ammo[am_cell] )
 	{
 	    player->pendingweapon = wp_plasma;
 	}
@@ -218,8 +217,7 @@ boolean P_CheckAmmo (player_t* player)
 	    player->pendingweapon = wp_missile;
 	}
 	else if (player->weaponowned[wp_bfg]
-		 && player->ammo[am_cell]>40
-		 && (gamemode != shareware) )
+		 && player->ammo[am_cell]>40 )
 	{
 	    player->pendingweapon = wp_bfg;
 	}

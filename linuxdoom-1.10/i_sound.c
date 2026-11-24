@@ -471,6 +471,9 @@ int I_GetSfxLumpNum(sfxinfo_t* sfx)
 {
     char namebuf[9];
     sprintf(namebuf, "ds%s", sfx->name);
+    // DOOM II sounds can be requested with the shareware IWAD: use a stand-in
+    if (W_CheckNumForName(namebuf) == -1)
+	return W_GetNumForName("dspistol");
     return W_GetNumForName(namebuf);
 }
 
