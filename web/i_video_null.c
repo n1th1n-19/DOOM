@@ -29,6 +29,19 @@ void I_StartTic (void)
     if (++n == 30 && getenv ("DOOM_LOOK"))
 	R_AddLook (atoi (getenv ("DOOM_LOOK")));
 
+    // test hook: DOOM_DOORS=1 lists every door line (special, midpoint) at tic 50
+    if (n == 50 && getenv ("DOOM_DOORS"))
+    {
+	int i;
+	for (i = 0 ; i < numlines ; i++)
+	{
+	    line_t* l = &lines[i];
+	    int sp = l->special;
+	    if (sp == 1 || sp == 26 || sp == 27 || sp == 28 || sp == 31 || sp == 32 || sp == 33 || sp == 34 || sp == 117 || sp == 118)
+		fprintf (stderr, "DOORLINE %d special %d at %d,%d\n", i, sp, (l->v1->x+l->v2->x)/2>>FRACBITS, (l->v1->y+l->v2->y)/2>>FRACBITS);
+	}
+    }
+
     // test hook: DOOM_DOORTEST=1 walks the player to a door, holds the use key
     //  (key 101 = e, or DOOM_USEKEY) and prints the door ceiling before/after
     if (getenv ("DOOM_DOORTEST"))
@@ -40,7 +53,7 @@ void I_StartTic (void)
 	    for (i = 0 ; i < numlines ; i++)
 	    {
 		line_t* l = &lines[i];
-		if ((l->special == 1 || l->special == 26 || l->special == 27 || l->special == 28) && l->backsector)
+		if (getenv ("DOOM_DOORLINE") ? i == atoi (getenv ("DOOM_DOORLINE")) : ((l->special == 1 || l->special == 26 || l->special == 27 || l->special == 28) && l->backsector))
 		{
 		    mobj_t* pl = players[consoleplayer].mo;
 		    fixed_t mx = (l->v1->x + l->v2->x)/2, my = (l->v1->y + l->v2->y)/2;
@@ -53,6 +66,15 @@ void I_StartTic (void)
 		    pl->x = mx + FixedMul (nx, 40*FRACUNIT);
 		    pl->y = my + FixedMul (ny, 40*FRACUNIT);
 		    pl->angle = R_PointToAngle2 (pl->x, pl->y, mx, my);
+		    if (getenv ("DOOM_POS"))
+		    {
+			// DOOM_POS=x,y,degrees: stand exactly there
+			int px, py, deg;
+			sscanf (getenv ("DOOM_POS"), "%d,%d,%d", &px, &py, &deg);
+			pl->x = px*FRACUNIT; pl->y = py*FRACUNIT;
+			pl->angle = (unsigned)((long long)deg * 0x100000000LL / 360);
+			fprintf (stderr, "DOOR side of line for this position: %d (0=front)\n", P_PointOnLineSide (pl->x, pl->y, l));
+		    }
 		    pl->z = pl->floorz = pl->subsector->sector->floorheight;
 		    door = l;
 		    fprintf (stderr, "DOOR line %d special %d ceiling-floor before: %d\n", i, l->special,

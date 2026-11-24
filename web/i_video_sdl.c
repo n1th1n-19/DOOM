@@ -117,6 +117,8 @@ void I_StartTic (void)
 	  case SDL_MOUSEBUTTONDOWN:
 	  case SDL_MOUSEBUTTONUP:
 	  {
+	    if (M_CheckParm ("-keylog"))
+		printf ("mouse button %d %s\n", e.button.button, e.type == SDL_MOUSEBUTTONDOWN ? "down" : "up");
 	    int bit = e.button.button == SDL_BUTTON_LEFT   ? 1 :
 		      e.button.button == SDL_BUTTON_MIDDLE ? 2 :
 		      e.button.button == SDL_BUTTON_RIGHT  ? 4 : 0;
@@ -137,6 +139,14 @@ void I_StartTic (void)
 	  case SDL_MOUSEMOTION:
 	    if (e.motion.xrel || e.motion.yrel)
 	    {
+		// -keylog: one summary line per 50 motion events
+		static int mn, mdx, mdy;
+		mn++; mdx += e.motion.xrel; mdy += e.motion.yrel;
+		if (mn == 50 && M_CheckParm ("-keylog"))
+		{
+		    printf ("mouse: 50 motion events, dx %d dy %d (relative mode %d)\n", mdx, mdy, (int)SDL_GetRelativeMouseMode ());
+		    mn = mdx = mdy = 0;
+		}
 		event.type = ev_mouse;
 		event.data1 = mouse_buttons;
 		event.data2 = e.motion.xrel << 2;

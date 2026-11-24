@@ -222,6 +222,10 @@
     wasLocked = now;
   });
   addEventListener('mousedown', (e) => pageLog('PAGE mousedown button=' + e.button));
+  // mouse movement as the page sees it while the pointer is locked, summed per second
+  let mmx = 0, mmy = 0, mmn = 0;
+  addEventListener('mousemove', (e) => { if (document.pointerLockElement) { mmx += e.movementX; mmy += e.movementY; mmn++; } });
+  setInterval(() => { if (mmn) { pageLog('PAGE mouse moved (locked): ' + mmn + ' events, dx ' + mmx + ' dy ' + mmy); mmx = mmy = mmn = 0; } }, 1000);
   document.addEventListener('pointerlockerror', () => pageLog('PAGE pointer lock error'));
 
   addEventListener('error', (e) => pageLog('ERROR ' + e.message + ' ' + (e.filename || '') + ':' + (e.lineno || '')));
