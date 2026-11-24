@@ -45,20 +45,13 @@ are shared across the renderer.
 ## Deploying to Vercel
 
 The site is static, so there is nothing to build on Vercel itself. `web/dist/` is
-the finished site and **is committed**, so a Git-connected Vercel project can serve
-it directly.
+the finished site and **is committed**. Either of these Root Directory settings
+works for a Git-connected project (Framework Preset **Other**, empty Build Command):
 
-Git-connected project, in the Vercel project settings:
-
-| Setting | Value |
+| Root Directory | What is served |
 | --- | --- |
-| Root Directory | `web/dist` |
-| Framework Preset | Other |
-| Build Command | empty |
-| Output Directory | empty (the default) |
-
-Without that Root Directory, Vercel serves the repo root, `build/doom.js` is
-missing, and the page fails with a 404 plus a "MIME type text/plain" error.
+| `web` | `web/index.html`; [`vercel.json`](vercel.json) rewrites `/build/*` to `dist/build/*`. |
+| `web/dist` | `dist/index.html`; `dist/vercel.json` (from [`vercel.dist.json`](vercel.dist.json)) has no rewrite. |
 
 CLI deploy instead:
 
@@ -76,8 +69,8 @@ git add web/dist && git commit
 
 - `doom.data` contains the WAD, so the shareware `doom1.wad` is what gets
   published. Only deploy a WAD you are allowed to redistribute.
-- [`vercel.json`](vercel.json) sets caching for `build/` and basic security headers.
-  Vercel serves `.wasm` as `application/wasm` and compresses the files itself.
+- Both configs set caching for `build/` and basic security headers. Vercel serves
+  `.wasm` as `application/wasm` and compresses the files itself.
 - Any other static host works the same way: serve the contents of `dist/`.
 
 ## Controls

@@ -40,6 +40,7 @@ dist: all
 	@test -f $(BUILD)/doom.data || { echo "dist: build/doom.data missing - put doom1.wad here and rebuild"; exit 1; }
 	rm -rf dist
 	mkdir -p dist/build
-	cp index.html vercel.json dist/
+	cp index.html dist/
+	cp vercel.dist.json dist/vercel.json
 	cp $(BUILD)/doom.js $(BUILD)/doom.wasm $(BUILD)/doom.data dist/build/
 .PHONY: all clean test dist
