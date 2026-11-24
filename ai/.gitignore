@@ -1,0 +1,5 @@
+__pycache__/
+_vizdoom/
+_vizdoom.ini
+runs/
+*.mp4
