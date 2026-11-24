@@ -95,7 +95,7 @@ published. Never put a commercial WAD in `wads/` or `dist/`.
 | Run | `Shift` (or turn on Always run) |
 | Strafe modifier | `Alt` |
 | Weapons | `1`–`7`, or the mouse wheel |
-| Menu | `Esc` |
+| Menu | `Esc`, or the **Menu** button. While the mouse is captured the browser keeps Esc for itself (it releases the mouse), so the page forwards it to the game: one Esc releases the mouse and opens the menu. |
 
 On touch devices an on-screen control pad appears; the **Touch controls** button
 toggles it elsewhere. The toolbar under the game also has an FPS counter, a

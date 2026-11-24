@@ -46,6 +46,7 @@
   <button id="smooth" title="Smooth or pixelated scaling">Smooth: off</button>
   <button id="full">Fullscreen</button>
   <button id="touchbtn" title="On-screen touch controls">Touch controls</button>
+  <button id="menubtn" title="Open or close the game menu (same as Esc)">Menu (Esc)</button>
   <button id="debugbtn" title="Show the debug log">Debug</button>
 </div>
 <div id="status">Loading…</div>
@@ -77,7 +78,7 @@
     <p><button id="play">Play</button></p>
     <div class="keys">
       <b>Controls</b> — W A S D move, mouse looks (click to capture), left mouse / Ctrl fire, E (or Space) use,
-      Shift run, 1–7 or mouse wheel weapons, a crosshair you can turn off under Options → Gameplay, PgUp / PgDn / Home look up / down / center, Esc menu.
+      Shift run, 1–7 or mouse wheel weapons, a crosshair you can turn off under Options → Gameplay, PgUp / PgDn / Home look up / down / center, Esc menu (Esc also releases the mouse).
       Options → Gameplay changes the rules while you play.
     </div>
   </div>
@@ -207,7 +208,20 @@
   }
   addEventListener('focus', () => pageLog('PAGE window focus'));
   addEventListener('blur', () => pageLog('PAGE window blur'));
-  document.addEventListener('pointerlockchange', () => pageLog('PAGE pointer lock ' + (document.pointerLockElement ? 'on' : 'off')));
+  // While the pointer is locked the browser swallows Esc (it just releases the lock), so the
+  // game never sees it. Losing the lock with the window still focused means Esc was pressed:
+  // pass it on, so Esc opens and closes the menu as usual.
+  let wasLocked = false;
+  document.addEventListener('pointerlockchange', () => {
+    const now = !!document.pointerLockElement;
+    pageLog('PAGE pointer lock ' + (now ? 'on' : 'off'));
+    if (wasLocked && !now && document.hasFocus()) {
+      pageLog('PAGE lock released by Esc -> sending Esc to the game');
+      fire('keydown', 'Escape'); setTimeout(() => fire('keyup', 'Escape'), 60);
+    }
+    wasLocked = now;
+  });
+  addEventListener('mousedown', (e) => pageLog('PAGE mousedown button=' + e.button));
   document.addEventListener('pointerlockerror', () => pageLog('PAGE pointer lock error'));
 
   addEventListener('error', (e) => pageLog('ERROR ' + e.message + ' ' + (e.filename || '') + ':' + (e.lineno || '')));
@@ -327,6 +341,7 @@
     const up = (e) => { b.classList.remove('down'); fire('keyup', key); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
   }
+  $('menubtn').onclick = () => { fire('keydown', 'Escape'); setTimeout(() => fire('keyup', 'Escape'), 60); canvas.focus(); };
   const touch = $('touch');
   $('touchbtn').onclick = () => touch.classList.toggle('on');
   if (matchMedia('(pointer: coarse)').matches) touch.classList.add('on');
