@@ -147,7 +147,7 @@
     arguments: ['-width', String(W), '-height', String(H),
                 ...(q.has('menu') ? [] : ['-warp', q.get('ep') || '1', q.get('map') || '1',
                                           '-skill', q.get('skill') || '3']),
-                ...(q.has('debug') ? ['-framelog'] : [])],
+                ...(q.has('debug') ? ['-framelog', '-uselog'] : [])],
     canvas: canvas,
     locateFile: (p) => 'build/' + p,   // doom.data/doom.wasm sit in build/
     print: (t) => { console.log(t); pageLog(t); },

@@ -12,6 +12,8 @@
 #include "r_main.h"
 #include "p_local.h"
 #include "p_mobj.h"
+#include "r_state.h"
+#include "doomstat.h"
 #include "d_event.h"
 #include "compose.h"
 
@@ -26,6 +28,44 @@ void I_StartTic (void)
     static int n;
     if (++n == 30 && getenv ("DOOM_LOOK"))
 	R_AddLook (atoi (getenv ("DOOM_LOOK")));
+
+    // test hook: DOOM_DOORTEST=1 walks the player to a door, holds the use key
+    //  (key 101 = e, or DOOM_USEKEY) and prints the door ceiling before/after
+    if (getenv ("DOOM_DOORTEST"))
+    {
+	static line_t* door;
+	if (n == 60)
+	{
+	    int i;
+	    for (i = 0 ; i < numlines ; i++)
+	    {
+		line_t* l = &lines[i];
+		if ((l->special == 1 || l->special == 26 || l->special == 27 || l->special == 28) && l->backsector)
+		{
+		    mobj_t* pl = players[consoleplayer].mo;
+		    fixed_t mx = (l->v1->x + l->v2->x)/2, my = (l->v1->y + l->v2->y)/2;
+		    fixed_t dx = l->v2->x - l->v1->x, dy = l->v2->y - l->v1->y;
+		    // step 40 units off the front side, along the normal
+		    int side = P_PointOnLineSide (pl->x, pl->y, l);
+		    fixed_t len = P_AproxDistance (dx, dy);
+		    fixed_t nx = FixedDiv (-dy, len), ny = FixedDiv (dx, len);
+		    if (side) { nx = -nx; ny = -ny; }
+		    pl->x = mx + FixedMul (nx, 40*FRACUNIT);
+		    pl->y = my + FixedMul (ny, 40*FRACUNIT);
+		    pl->angle = R_PointToAngle2 (pl->x, pl->y, mx, my);
+		    pl->z = pl->floorz = pl->subsector->sector->floorheight;
+		    door = l;
+		    fprintf (stderr, "DOOR line %d special %d ceiling-floor before: %d\n", i, l->special,
+			     (l->backsector->ceilingheight - l->backsector->floorheight)>>FRACBITS);
+		    break;
+		}
+	    }
+	}
+	if (n == 70 && door) { event_t e; e.type = ev_keydown; e.data1 = getenv ("DOOM_USEKEY") ? atoi (getenv ("DOOM_USEKEY")) : 101; D_PostEvent (&e); }
+	if (n == 140 && door)
+	    fprintf (stderr, "DOOR after: %d\n", (door->backsector->ceilingheight - door->backsector->floorheight)>>FRACBITS);
+    }
+
 
     // test hook: DOOM_STATS=1 prints monster counts at tic 100
     if (n == 100 && getenv ("DOOM_STATS"))

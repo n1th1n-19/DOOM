@@ -61,6 +61,8 @@ static void PostKey (evtype_t type, SDL_Keycode sym)
 {
     event_t event;
     int key = TranslateKey (sym);
+    if (M_CheckParm ("-framelog"))
+	printf ("key %s sym %d -> doom key %d\n", type == ev_keydown ? "down" : "up", (int)sym, key);
     if (!key)
 	return;
     event.type = type;

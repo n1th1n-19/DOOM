@@ -29,6 +29,7 @@ rcsid[] = "$Id: p_user.c,v 1.3 1997/01/28 22:08:29 b1 Exp $";
 
 
 #include "doomdef.h"
+#include "m_argv.h"
 #include "d_event.h"
 
 #include "p_local.h"
@@ -334,6 +335,8 @@ void P_PlayerThink (player_t* player)
     {
 	if (!player->usedown)
 	{
+	    if (M_CheckParm ("-uselog"))
+		printf ("use pressed at %d,%d\n", player->mo->x>>FRACBITS, player->mo->y>>FRACBITS);
 	    P_UseLines (player);
 	    player->usedown = true;
 	}

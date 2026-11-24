@@ -109,7 +109,7 @@ Add these to the URL, for example `index.html?h=1080&debug`.
 | --- | --- |
 | `h=<rows>` | Render height, 240–1200 (default 720). |
 | `w=<cols>` | Render width, up to 1920 (default: the window's aspect, between 4:3 and 8:3). |
-| `debug` | Shows the game's console output on the page and logs every 100th frame. |
+| `debug` | Shows the game's console output on the page: every 100th frame, every key press and every use-key press with the player's position. |
 | `autostart` | Skips the start screen. |
 | `ep=<1-4>` `map=<1-9>` `skill=<1-5>` | Episode, map and difficulty to start in (default `1`, `1`, `3`). Skill 4 is Ultra-Violence, 5 is Nightmare. |
 | `menu` | Opens the title screen and attract demos instead of going straight into E1M1. |
@@ -200,6 +200,7 @@ Test hooks, set as environment variables:
 | --- | --- |
 | `DOOM_DUMP=<frame>` and `DOOM_OUT=<file>` | Write that frame as a PPM and exit. |
 | `DOOM_LOOK=<rows>` | Shear the view once after the level starts. |
+| `DOOM_DOORTEST=1` | Walk to the first door, press the use key and print the door opening (`DOOM_USEKEY=<code>` to change the key). |
 | `DOOM_STATS=1` | Print living/dead monster counts and the nearest living monster at tic 100. |
 | `DOOM_KEYS=27,175,13` | Press these key codes, one every 4 tics (for opening menus). |
 
